@@ -65,3 +65,6 @@ Si alguien actualizó `develop`, tienes cambios en una versión antigua y **no l
 5. Ve nuevamente a los tres puntos (`...`) de la interfaz gráfica de Git:
    * Busca **Stash** $\rightarrow$ **Apply Latest Stash**.
 6. Si hay **conflictos**, resuélvelos decidiendo qué cambios entrantes (*Incoming*) mantienes o cuáles de tus cambios (*Current*) prefieres conservar.
+
+### Al terminar el trabajo
+Se actualiza main con la version final de develop, se sigue este flujo para poder mantener un correcto manejo de versiones.
