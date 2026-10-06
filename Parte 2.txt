@@ -1,0 +1,33 @@
+Parte 2
+
+¿En que carro nos desplazaremos?
+
+Toyota Corolla Berlina 1995 (E100)
+
+Consumo de combustible combinado de 7.3L/100 KM (Gasolina corriente)
+
+https://www.auto-data.net/es/toyota-corolla-vii-e100-1.6-si-114hp-3351
+
+
+
+Objetivo:
+
+Desconocido (Relacionado con pregunta 1)
+Reducir Distancias (Ahorrar combustible)
+Pasar por la menor cantidad de peajes (Ahorrar plata)
+
+
+
+
+Pregunta 1: ¿Qué es el valor de la hora del vendedor?
+
+Pregunta 2: ¿Qué es un algoritmo de colonia de hormigas?
+
+Pregunta 3: ¿En donde vamos a hallar la información sobre la cantidad de peajes y su lugar exacto en España?
+
+Pregunta 4: ¿Cuánto vale un peaje para nuestro carro específicamente? ¿Cada peaje tiene un valor distinto?
+
+Pregunta 5  ¿Cada peaje tiene un valor distinto?
+
+Pregunta 6: ¿En donde vamos a hallar la información exacta sobre la cantidad de kilómetros entre cada ciudad?
+
