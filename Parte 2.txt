@@ -31,3 +31,13 @@ Pregunta 5  ¿Cada peaje tiene un valor distinto?
 
 Pregunta 6: ¿En donde vamos a hallar la información exacta sobre la cantidad de kilómetros entre cada ciudad?
 
+
+Idea 1:
+
+Hacer una grafica general del mapa de España, en donde establezcamos 3 cosas, las capitales provinciales peninsulares, los peajes en España, y una linea recta entre cada ciudad.
+
+Establecer un orden ideal de recorrido basado en esas distancias, posteriormente, analizar a lupa, cada recorrido en la vida real, y cual ruta, según Google maps o algún software sea la ideal.
+
+Posterior a eso mirar el tema de los peajes, y modificar el algoritmo teniendo en cuenta la posición de los peajes.
+
+Mirar el tema de la variable desconocida.
