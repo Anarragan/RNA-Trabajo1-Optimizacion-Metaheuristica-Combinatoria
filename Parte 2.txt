@@ -16,7 +16,8 @@ Desconocido (Relacionado con pregunta 1)
 Reducir Distancias (Ahorrar combustible)
 Pasar por la menor cantidad de peajes (Ahorrar plata)
 
-
+Propuesta: Usemos la instancia att48.tsp de TSPLIB (https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/tspindex.html)
+En python existe una libreria para manejar archivos .tsp, se llama TSPLIB95 (https://tsplib95.readthedocs.io/en/stable/pages/readme.html)
 
 
 Pregunta 1: ¿Qué es el valor de la hora del vendedor?
