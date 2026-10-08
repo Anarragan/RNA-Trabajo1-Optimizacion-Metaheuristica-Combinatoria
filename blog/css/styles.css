@@ -1,0 +1,26 @@
+body {
+      background-color: #f8f9fa;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #2b2d42;
+    }
+    .blog-card {
+      background: #ffffff;
+      border: 1px solid #e9ecef;
+      border-radius: 12px;
+    }
+    .section-card {
+      background-color: #fdfdfd;
+      border-left: 4px solid #4a5568 !important; /* Tono Slate neutro sobrio */
+      border: 1px solid #edf2f7;
+      border-radius: 6px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .section-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .section-title {
+      color: #2d3748;
+      font-weight: 600;
+      font-size: 1.15rem;
+    }
