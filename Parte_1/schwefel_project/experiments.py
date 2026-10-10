@@ -1,14 +1,10 @@
-"""
-Orquestador de experimentos: corre múltiples semillas, guarda resultados,
-calcula estadísticas.
-"""
 import os
 import json
+import inspect
 import numpy as np
 
 from schwefel import schwefel
-from optimizers import descenso_gradiente, gradiente_schwefel
-
+import optimizers
 
 RESULTS_DIR = "results"
 UMBRALES_EXITO = {
@@ -18,34 +14,72 @@ UMBRALES_EXITO = {
     5: 1e-1,
 }
 
-def run_gd_experiments(
+def ejecutar_optimizador(algoritmo_fn, dim=2, seed=None, f=schwefel, bounds=(-500.0, 500.0), **kwargs):
+    """
+    Ejecuta una ÚNICA corrida individual de cualquier optimizador de manera transparente.
+    
+    Parámetros:
+        - algoritmo_fn: función del optimizador (e.g., optimizers.pso, optimizers.descenso_gradiente).
+        - dim: dimensión del problema.
+        - seed: entero o None. Si se proporciona, se crea un np.random.default_rng(seed).
+        - f: función objetivo.
+        - bounds: límites del espacio de búsqueda.
+        - **kwargs: hiperparámetros adicionales específicos del optimizador (e.g., pop_size, learning_rate).
+    
+    Retorna:
+        Dict estándar retornado por el optimizador con historial, métricas y metadatos.
+    """
+    rng = np.random.default_rng(seed)
+    lo, hi = bounds
+
+    # Inspeccionamos la firma del algoritmo para enviarle solo los parámetros que soporta
+    sig = inspect.signature(algoritmo_fn)
+    params = sig.parameters
+
+    opt_args = {}
+    
+    if "f" in params:
+        opt_args["f"] = f
+    if "dim" in params:
+        opt_args["dim"] = dim
+    if "bounds" in params:
+        opt_args["bounds"] = bounds
+    if "rng" in params:
+        opt_args["rng"] = rng
+    elif "x0" in params:
+        # Algoritmos punto a punto como Gradient Descent requieren un punto x0 inicial
+        opt_args["x0"] = rng.uniform(lo, hi, size=dim)
+
+    # Incorporamos hiperparámetros adicionales pasados por el usuario
+    for k, v in kwargs.items():
+        if k not in params:
+            raise ValueError(f"El optimizador {algoritmo_fn.__name__} no acepta el parámetro '{k}'.")
+        else:
+            opt_args[k] = v
+
+    return algoritmo_fn(**opt_args)
+
+def run_experiments(
+    algoritmo_fn,
     dim=2,
     n_runs=30,
-    learning_rate=0.1,
-    max_iter=200,
-    tol=1e-6,
-    bounds=(-500.0, 500.0),
-    use_analytic_grad=True,
-    record_every=1,
     base_seed=0,
     tag=None,
     umbral_exito=None,
+    bounds=(-500.0, 500.0),
+    **opt_kwargs
 ):
     """
-    Corre n_runs corridas independientes de GD sobre Schwefel.
-
-    Parámetros clave:
-      - dim: dimensión del problema. Acepta 2, 3, ...
-      - tag: nombre base para los archivos. Si None, se deriva: f"gd_{dim}d".
-      - base_seed: semilla base. Cada corrida usa base_seed + run.
-      - umbral_exito: umbral para contar éxito. Si None, se toma de UMBRALES_EXITO[dim].
-
-    Ejemplo:
-        run_gd_experiments(dim=2, base_seed=0)
-        run_gd_experiments(dim=3, base_seed=1000)
+    Ejecuta el protocolo de N corridas independientes sobre cualquier optimizador,
+    almacenando estadísticas globales e historiales detallados.
     """
+    if n_runs < 1:
+        raise ValueError("n_runs debe ser al menos 1.")
+    
+    nombre_algo = getattr(algoritmo_fn, "__name__", "optimizador")
     if tag is None:
-        tag = f"gd_{dim}d"
+        tag = f"{nombre_algo}_{dim}d"
+        
     if umbral_exito is None:
         umbral_exito = UMBRALES_EXITO.get(dim, 1e-1)
 
@@ -55,33 +89,33 @@ def run_gd_experiments(
 
     for run in range(n_runs):
         seed = base_seed + run
-        rng = np.random.default_rng(seed)
-        x0 = rng.uniform(bounds[0], bounds[1], size=dim)
-
-        res = descenso_gradiente(
-            f=schwefel,
-            x0=x0,
-            grad_fn=gradiente_schwefel if use_analytic_grad else None,
-            learning_rate=learning_rate,
-            max_iter=max_iter,
-            tol=tol,
-            bounds=bounds,
-            record_every=record_every,
-        )
-
-        np.savez(
-            os.path.join(RESULTS_DIR, f"{tag}_run{run:02d}.npz"),
-            x0=x0,
-            x_final=res["x_final"],
-            f_final=res["f_final"],
-            historial_x=res["historial_x"],
-            historial_f=res["historial_f"],
-            iteraciones=res["iteraciones"],
-            n_evals_f=res["n_evals_f"],
+        
+        # Reutilizamos exactamente la misma función de corrida individual
+        res = ejecutar_optimizador(
+            algoritmo_fn=algoritmo_fn,
+            dim=dim,
             seed=seed,
-            convergio=res["convergio"],
+            bounds=bounds,
+            **opt_kwargs
         )
 
+        # Guardar historial individual
+        save_data = {
+            "x_final": res["x_final"],
+            "f_final": res["f_final"],
+            "historial_x": res["historial_x"],
+            "historial_f": res["historial_f"],
+            "iteraciones": res["iteraciones"],
+            "n_evals_f": res["n_evals_f"],
+            "seed": seed,
+            "convergio": res["convergio"],
+        }
+        if "historial_poblacion" in res:
+            save_data["historial_poblacion"] = res["historial_poblacion"]
+
+        np.savez(os.path.join(RESULTS_DIR, f"{tag}_run{run:02d}.npz"), **save_data)
+
+        # Recopilación de estadísticas
         f_finales.append(res["f_final"])
         x_finales.append(res["x_final"])
         iteraciones.append(res["iteraciones"])
@@ -90,13 +124,15 @@ def run_gd_experiments(
         convergio.append(res["convergio"])
 
     f_finales = np.array(f_finales)
+    
     resumen = {
         "tag": tag,
+        "algoritmo": nombre_algo,
         "dim": dim,
         "n_runs": n_runs,
         "umbral_exito": umbral_exito,
         "media": float(np.mean(f_finales)),
-        "std": float(np.std(f_finales)),
+        "std": float(np.std(f_finales, ddof=1)),
         "mejor": float(np.min(f_finales)),
         "peor": float(np.max(f_finales)),
         "tasa_exito": float(np.mean(exitos)),
@@ -105,12 +141,9 @@ def run_gd_experiments(
         "tasa_convergencia": float(np.mean(convergio)),
         "f_finales": [float(v) for v in f_finales],
         "config": {
-            "learning_rate": learning_rate,
-            "max_iter": max_iter,
-            "tol": tol,
-            "use_analytic_grad": use_analytic_grad,
-            "record_every": record_every,
             "base_seed": base_seed,
+            "bounds": list(bounds),
+            **opt_kwargs
         },
     }
 
@@ -119,9 +152,8 @@ def run_gd_experiments(
 
     return resumen
 
+
 def cargar_corrida(tag, run):
-    """
-    Carga los resultados de una corrida específica.
-    """
-    d = np.load(os.path.join(RESULTS_DIR, f"{tag}_run{run:02d}.npz"))
-    return d["historial_x"], d["historial_f"]
+    """Carga y retorna los datos completos guardados de una corrida específica."""
+    filepath = os.path.join(RESULTS_DIR, f"{tag}_run{run:02d}.npz")
+    return np.load(filepath)

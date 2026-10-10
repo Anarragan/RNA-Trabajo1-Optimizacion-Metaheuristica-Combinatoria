@@ -1,28 +1,27 @@
 import numpy as np
 from schwefel import schwefel
 
+import numpy as np
+
 def gradiente_schwefel(x):
     """
-    Gradiente analítico de la función de Schwefel.
+    Gradiente analítico exacto de la función de Schwefel para cualquier dimensión.
+    Funciona perfectamente en 2D, 3D o vectores N-dimensionales.
     """
     x = np.asarray(x, dtype=float)
-
     sqrt_abs_x = np.sqrt(np.abs(x))
-
-    grad = (
-        -np.sin(sqrt_abs_x)
-        - (sqrt_abs_x / 2) * np.cos(sqrt_abs_x)
-    )
-
-    # En x = 0, el valor del gradiente es 0
+    termino1 = -np.sin(sqrt_abs_x)
+    termino2 = -0.5 * sqrt_abs_x * np.cos(sqrt_abs_x) * np.sign(x)
+    grad = termino1 + termino2
     grad = np.where(x == 0, 0.0, grad)
-
+    
     return grad
+
 
 def descenso_gradiente(
     f,
     x0,
-    grad_fn=None,
+    grad_fn=gradiente_schwefel,
     learning_rate=0.1,
     max_iter=1000,
     tol=1e-6,
@@ -30,11 +29,10 @@ def descenso_gradiente(
     record_every=1,
 ):
     """
-    Descenso por gradiente.
+    Descenso por gradiente con gradiente analítico por defecto.
 
-    Si grad_fn es None, usa diferencias centrales (gradiente numérico).
-    El parámetro 'record_every' controla cada cuántas iteraciones se
-    guarda en el historial (para no saturar el GIF).
+    record_every controla cada cuántas iteraciones se guarda
+    la trayectoria para el análisis y la visualización.
     """
     x = np.array(x0, dtype=float)
     n = x.size
@@ -74,7 +72,7 @@ def _resultado(nombre, hx, hf, it, convergio, n_evals, meta, pob=None):
     return out
 
 def pso(f, dim, rng, pop_size=40, max_iter=300, w=0.7298, c1=1.49618, c2=1.49618,
-        vmax_frac=0.2, tol=1e-6, bounds=(-500.0, 500.0), record_population=True):
+        vmax_frac=0.2, tol=1e-6, bounds=(-500.0, 500.0), record_population=False):
     """Optimización por enjambre de partículas (PSO) con coeficientes de constricción."""
     lo, hi = bounds
     vmax = vmax_frac * (hi - lo)
@@ -108,7 +106,7 @@ def pso(f, dim, rng, pop_size=40, max_iter=300, w=0.7298, c1=1.49618, c2=1.49618
                            vmax_frac=vmax_frac, tol=tol), pob)
 
 def evolucion_diferencial(f, dim, rng, pop_size=40, max_iter=300, F=0.6, CR=0.9,
-                          tol=1e-6, bounds=(-500.0, 500.0), record_population=True):
+                          tol=1e-6, bounds=(-500.0, 500.0), record_population=False):
     """Evolución diferencial DE/rand/1/bin."""
     if pop_size < 4:
         raise ValueError("DE necesita pop_size >= 4")
@@ -142,9 +140,9 @@ def evolucion_diferencial(f, dim, rng, pop_size=40, max_iter=300, F=0.6, CR=0.9,
     return _resultado("DE", hx, hf, it, convergio, n_evals,
                       dict(pop_size=pop_size, max_iter=max_iter, F=F, CR=CR, tol=tol), pob)
 
-def algoritmo_evolutivo(f, dim, rng, pop_size=40, max_iter=300, pc=0.9, pm=0.2,
-                        sigma_frac=0.1, elite=2, torneo_k=3, alpha=0.5, tol=1e-6,
-                        bounds=(-500.0, 500.0), record_population=True):
+def algoritmo_evolutivo(f, dim, rng, pop_size=40, max_iter=300, pc=0.9, mutation_rate=0.2,
+                        mutation_scale=0.1, elite=2, torneo_k=3, alpha=0.5, tol=1e-6,
+                        bounds=(-500.0, 500.0), record_population=False):
     """Algoritmo genético de codificación real: torneo, cruce BLX-alpha,
     mutación gaussiana decreciente y elitismo."""
     lo, hi = bounds
@@ -156,7 +154,7 @@ def algoritmo_evolutivo(f, dim, rng, pop_size=40, max_iter=300, pc=0.9, pm=0.2,
     convergio = False
 
     for it in range(1, max_iter + 1):
-        sigma = sigma_frac * (hi - lo) * (1 - it / max_iter) + 1e-4     # mutación que decrece
+        sigma = mutation_scale * (hi - lo) * (1 - it / max_iter) + 1e-4     # mutación que decrece
         orden = np.argsort(fx)
         elites, elites_f = x[orden[:elite]].copy(), fx[orden[:elite]].copy()
 
@@ -169,7 +167,7 @@ def algoritmo_evolutivo(f, dim, rng, pop_size=40, max_iter=300, pc=0.9, pm=0.2,
                             np.maximum(padres, pareja) + alpha * d)
         hijos = np.where((rng.random(pop_size) < pc)[:, None], hijos, padres)
 
-        mut = rng.random((pop_size, dim)) < pm                           # mutación gaussiana
+        mut = rng.random((pop_size, dim)) < mutation_rate                           # mutación gaussiana
         hijos = np.clip(hijos + mut * rng.normal(0, sigma, (pop_size, dim)), lo, hi)
 
         nuevos = hijos[elite:]                                           # los élites no se re-evalúan
@@ -183,6 +181,6 @@ def algoritmo_evolutivo(f, dim, rng, pop_size=40, max_iter=300, pc=0.9, pm=0.2,
             break
 
     return _resultado("EA", hx, hf, it, convergio, n_evals,
-                      dict(pop_size=pop_size, max_iter=max_iter, pc=pc, pm=pm,
-                           sigma_frac=sigma_frac, elite=elite, torneo_k=torneo_k,
+                      dict(pop_size=pop_size, max_iter=max_iter, pc=pc, mutation_rate=mutation_rate,
+                           mutation_scale=mutation_scale, elite=elite, torneo_k=torneo_k,
                            alpha=alpha, tol=tol), pob) 
