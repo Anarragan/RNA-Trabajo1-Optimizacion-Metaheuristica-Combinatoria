@@ -12,3 +12,10 @@ Puntos clave para entender y sustentar el códigoOrden de las Coordenadas (lon,l
 ¿Cómo funciona la matriz de combustible?
 
 Se encarga de leer y recopilar la información de los dos archivos .csv que se necesitan para calcular el costo del combustible. Primero, el .csv de los nombres de las ciudades, segundo el archivo que contiene sus distancias. Asi, crea una matriz, multiplicando el costo del combustible para nuestro carro 7.3 L/ Km por cada distancia, hayamos ese valor.
+
+¿Como funciona el archivo generador de precios por peajes?
+
+El archivo lee los nombres de las ciudades en el archivo de ciudades .csv, luego, crea una matriz de ceros (Dataframe), luego de eso tiene ya informacion en formato diccionario acerca de los traslados entre ciudades, que, en este momento le cobran al usuario por pasar, segun nuestra bibliografia. Luego de eso a partir de un ciclo for, lee el archivo de matrices de cero, y, si encuentra alguna ruta ya programada en el codigo, cuyos nombres coincidan con el valor de la fila y la columna, entonces, cambia el valor.
+
+Finalmente convierte el dataframe en un .csv
+
