@@ -1,0 +1,14 @@
+Como obtuvimos la información al principio?
+
+TSPs
+
+Finalmente decidimos APIs
+
+¿Cómo funciona el explorador y recopilador de APIs?
+
+Puntos clave para entender y sustentar el códigoOrden de las Coordenadas (lon,lat):El estándar cartográfico común nombra primero la latitud y luego la longitud. Sin embargo, APIs basadas en GeoJSON como OSRM exigen estrictamente longitud,latitud (equivalente al par cartesiano $(x, y)$). Invertir este orden situaría las coordenadas en el Océano Índico o el Golfo de Guinea.Servicio Table vs. Route:La API table de OSRM calcula todos los pares origen-destino de una sola vez en el servidor de enrutamiento mediante algoritmos de contracción jerárquica (Contraction Hierarchies), evitando realizar $47 \times 46 = 2.162$ peticiones HTTP individuales.Cumplimiento de los requisitos del reto:Al ejecutar este script, se generan tres archivos CSV estáticos. Tus algoritmos de Colonia de Hormigas y Genético leerán directamente estos CSV con pandas o numpy, logrando tiempos de ejecución inferiores a los 2 minutos exigidos sin requerir conexión a internet durante la prueba en vivo.Prueba a ejecutar el script en tu terminal (python generar_matrices_espana.py).
+
+
+¿Cómo funciona la matriz de combustible?
+
+Se encarga de leer y recopilar la información de los dos archivos .csv que se necesitan para calcular el costo del combustible. Primero, el .csv de los nombres de las ciudades, segundo el archivo que contiene sus distancias. Asi, crea una matriz, multiplicando el costo del combustible para nuestro carro 7.3 L/ Km por cada distancia, hayamos ese valor.
