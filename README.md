@@ -1,4 +1,23 @@
 # RNA-Trabajo1-Optimizacion-Metaheuristica-Combinatoria
+1. crear entorno virtual
+2. instalar dependiencias (luego pongo el requeriments.txt)
+3. ejecutar con consola de comandos desde Parte1/schwefel_project.py
+4. Comandos que puedes usar:
+
+```bash
+# Un modelo, 30 corridas (o las que indiques con --runs)
+python run.py --algo pso --experiment
+
+# Varios modelos que tú elijas, y los compara
+python run.py --algo pso de --experiment --runs 50
+
+# Los 4 modelos, 30 corridas cada uno
+python run.py --compare
+
+# Una sola corrida (con GIF opcional)
+python run.py --algo gd
+python run.py --algo pso --gif
+```
 
 # Guía inicial de GitFlow Simplificado
 
