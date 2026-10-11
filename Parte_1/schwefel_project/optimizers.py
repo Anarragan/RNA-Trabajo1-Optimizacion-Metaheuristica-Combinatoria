@@ -1,20 +1,21 @@
 import numpy as np
 from schwefel import schwefel
 
-import numpy as np
-
 def gradiente_schwefel(x):
     """
     Gradiente analítico exacto de la función de Schwefel para cualquier dimensión.
-    Funciona perfectamente en 2D, 3D o vectores N-dimensionales.
+    Funciona en 2D, 3D o vectores N-dimensionales.
+
+    d/dx [ x*sin(sqrt|x|) ] = sin(sqrt|x|) + (sqrt|x|/2) * cos(sqrt|x|)
+    (el signo de x ya queda absorbido en la derivada; NO se multiplica por sign(x)).
     """
     x = np.asarray(x, dtype=float)
     sqrt_abs_x = np.sqrt(np.abs(x))
     termino1 = -np.sin(sqrt_abs_x)
-    termino2 = -0.5 * sqrt_abs_x * np.cos(sqrt_abs_x) * np.sign(x)
+    termino2 = -0.5 * sqrt_abs_x * np.cos(sqrt_abs_x)
     grad = termino1 + termino2
     grad = np.where(x == 0, 0.0, grad)
-    
+
     return grad
 
 
@@ -33,27 +34,32 @@ def descenso_gradiente(
 
     record_every controla cada cuántas iteraciones se guarda
     la trayectoria para el análisis y la visualización.
+
+    Conteo de costo: solo se cuentan las evaluaciones que el algoritmo necesita
+    (un gradiente por iteración). Las evaluaciones de f para el historial son
+    solo registro y no se cuentan.
     """
     x = np.array(x0, dtype=float)
-    n = x.size
     lo, hi = bounds
-    hx, hf, n_evals = [x.copy()], [f(x)], 1
+    hx, hf = [x.copy()], [f(x)]
+    n_grad = 0
     convergio = False
 
     for it in range(1, max_iter + 1):
         x_new = np.clip(x - learning_rate * grad_fn(x), lo, hi)
+        n_grad += 1                                   # <- un gradiente por iteración
         convergio = np.linalg.norm(x_new - x) < tol
         x = x_new
 
         if it % record_every == 0 or convergio or it == max_iter:
-            hx.append(x.copy()); hf.append(f(x)); n_evals += 1
+            hx.append(x.copy()); hf.append(f(x))
         if convergio:
             break
 
     return {"x_final": x, "f_final": hf[-1],
             "historial_x": np.array(hx), "historial_f": np.array(hf),
             "iteraciones": it, "convergio": bool(convergio),
-            "n_evals_f": n_evals
+            "n_evals_f": 0, "n_evals_grad": n_grad,
     }
 
 def _diversidad(x):
@@ -66,6 +72,7 @@ def _resultado(nombre, hx, hf, it, convergio, n_evals, meta, pob=None):
            "historial_x": np.array(hx),          # MEJOR individuo en cada iteración
            "historial_f": np.array(hf),          # f del mejor individuo en cada iteración
            "iteraciones": it, "convergio": bool(convergio), "n_evals_f": n_evals,
+           "n_evals_grad": 0,                    # los métodos poblacionales no usan gradiente
            "metadata": {"algoritmo": nombre, **meta}}
     if pob is not None:
         out["historial_poblacion"] = np.array(pob)   # (T+1, pop, dim): para animar
@@ -183,4 +190,4 @@ def algoritmo_evolutivo(f, dim, rng, pop_size=40, max_iter=300, pc=0.9, mutation
     return _resultado("EA", hx, hf, it, convergio, n_evals,
                       dict(pop_size=pop_size, max_iter=max_iter, pc=pc, mutation_rate=mutation_rate,
                            mutation_scale=mutation_scale, elite=elite, torneo_k=torneo_k,
-                           alpha=alpha, tol=tol), pob) 
+                           alpha=alpha, tol=tol), pob)
