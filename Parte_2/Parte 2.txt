@@ -1,0 +1,53 @@
+Parte 2
+
+¿En que carro nos desplazaremos?
+
+Toyota Corolla Berlina 1995 (E100)
+
+Consumo de combustible combinado de 7.3L/100 KM (Gasolina corriente)
+
+https://www.auto-data.net/es/toyota-corolla-vii-e100-1.6-si-114hp-3351
+
+
+
+Objetivo:
+
+Desconocido (Relacionado con pregunta 1)
+Reducir Distancias (Ahorrar combustible)
+Pasar por la menor cantidad de peajes (Ahorrar plata)
+
+Propuesta: Usemos la instancia att48.tsp de TSPLIB (https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/tspindex.html)
+En python existe una libreria para manejar archivos .tsp, se llama TSPLIB95 (https://tsplib95.readthedocs.io/en/stable/pages/readme.html)
+
+
+Pregunta 1: ¿Qué es el valor de la hora del vendedor?
+R/ Surge al protagonizar al vendedor en el TSP y preguntarnos por los costos que conllevan hacer que viaje.
+Tal valor es un coeficiente economico ($/hora), cuantifica dos aspectos:
+-Costo laboral directo: Salario/hora, prestaciones sociales, viaticos y sobrecostos operativos.
+-Costo de oportunidad comercial: Ingresos o ventas potenciales que no se hacen debido a tener.
+
+
+Pregunta 2: ¿En donde vamos a hallar la información sobre la cantidad de peajes y su lugar exacto en España?
+R/
+-Routes API
+
+Pregunta 3: ¿Cuánto vale un peaje para nuestro carro específicamente? ¿Cada peaje tiene un valor distinto?
+
+
+Pregunta 4:  ¿Cada peaje tiene un valor distinto?
+R/ Si, seguramente (podriamos asumir un promedio si vemos que no cambian mucho)
+
+Pregunta 5: ¿En donde vamos a hallar la información exacta sobre la cantidad de kilómetros entre cada ciudad?
+R/
+-Routes API
+-Catalogo de la red de carreteras del estado (https://www.transportes.gob.es/carreteras/catalogo-y-evolucion-de-la-red-de-carreteras/archivos-geometrias-rce)
+
+Idea 1:
+
+Hacer una grafica general del mapa de España, en donde establezcamos 3 cosas, las capitales provinciales peninsulares, los peajes en España, y una linea recta entre cada ciudad.
+
+Establecer un orden ideal de recorrido basado en esas distancias, posteriormente, analizar a lupa, cada recorrido en la vida real, y cual ruta, según Google maps o algún software sea la ideal.
+
+Posterior a eso mirar el tema de los peajes, y modificar el algoritmo teniendo en cuenta la posición de los peajes.
+
+Mirar el tema de la variable desconocida.

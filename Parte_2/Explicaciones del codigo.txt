@@ -1,0 +1,76 @@
+Como obtuvimos la información al principio?
+
+TSPs
+
+Finalmente decidimos APIs
+
+¿Cómo funciona el explorador y recopilador de APIs?
+
+Puntos clave para entender y sustentar el códigoOrden de las Coordenadas (lon,lat):El estándar cartográfico común nombra primero la latitud y luego la longitud. Sin embargo, APIs basadas en GeoJSON como OSRM exigen estrictamente longitud,latitud (equivalente al par cartesiano $(x, y)$). Invertir este orden situaría las coordenadas en el Océano Índico o el Golfo de Guinea.Servicio Table vs. Route:La API table de OSRM calcula todos los pares origen-destino de una sola vez en el servidor de enrutamiento mediante algoritmos de contracción jerárquica (Contraction Hierarchies), evitando realizar $47 \times 46 = 2.162$ peticiones HTTP individuales.Cumplimiento de los requisitos del reto:Al ejecutar este script, se generan tres archivos CSV estáticos. Tus algoritmos de Colonia de Hormigas y Genético leerán directamente estos CSV con pandas o numpy, logrando tiempos de ejecución inferiores a los 2 minutos exigidos sin requerir conexión a internet durante la prueba en vivo.Prueba a ejecutar el script en tu terminal (python generar_matrices_espana.py).
+
+
+¿Cómo funciona la matriz de combustible?
+
+Se encarga de leer y recopilar la información de los dos archivos .csv que se necesitan para calcular el costo del combustible. Primero, el .csv de los nombres de las ciudades, segundo el archivo que contiene sus distancias. Asi, crea una matriz, multiplicando el costo del combustible para nuestro carro 7.3 L/ Km por cada distancia, hayamos ese valor.
+
+¿Como funciona el archivo generador de precios por peajes?
+
+El archivo lee los nombres de las ciudades en el archivo de ciudades .csv, luego, crea una matriz de ceros (Dataframe), luego de eso tiene ya informacion en formato diccionario acerca de los traslados entre ciudades, que, en este momento le cobran al usuario por pasar, segun nuestra bibliografia. Luego de eso a partir de un ciclo for, lee el archivo de matrices de cero, y, si encuentra alguna ruta ya programada en el codigo, cuyos nombres coincidan con el valor de la fila y la columna, entonces, cambia el valor.
+
+Finalmente convierte el dataframe en un .csv
+
+
+¿Cómo funciona la matriz de costos totales?
+
+El archivo (matriz_costos.py) consolida el costo económico total de desplazamiento entre cada una de las 47 capitales peninsulares para el TSP, sumando tres componentes:
+1. Costo de combustible (€), combustible_espana_eur.csv.
+2. Costo de peajes (€), peajes_espana_eur.csv.
+3. Costo del tiempo del vendedor (€), tiempos_espana_h.csv * VALOR_HORA_VENDEDOR_DEFAULT (25.00 €/h).
+
+Usando la formula: Costo_Total = Combustible + Peajes + (Tiempo * Valor_Hora)
+
+Por último, fija en 0.0 la diagonal principal (origen = destino), redondea a 2 decimales y exporta el resultado final, costos_totales_espana_eur.csv.
+
+
+¿Cómo funciona la generación de instancias en formato TSPLIB (generar_tsp.py)?
+
+El archivo (generar_tsp.py) genera de forma automatizada un conjunto de instancias estandarizadas del problema en formato TSPLIB95 (.tsp) dentro del subdirectorio "instancias_tsp/", parametrizadas según diferentes valores de la tarifa horaria del vendedor (0.0, 15.0, 25.0, 35.0, 50.0 y 75.0 €/h):
+
+1. Cálculo dinámico de la matriz de costos: Para cada valor de hora del vendedor, combina las matrices base (combustible_espana_eur.csv, peajes_espana_eur.csv y tiempos_espana_h.csv) aplicando la ecuación de costo total:
+   Costo_Total = Combustible + Peajes + (Tiempo * Valor_Hora)
+   Fijando en 0.0 los costos diagonales (traslado de una ciudad hacia sí misma).
+
+2. Configuración de la instancia TSPLIB95: Construye un objeto StandardProblem de la librería tsplib95 definiéndolo con:
+   - TYPE: ATSP (Asymmetric Traveling Salesperson Problem), reflejando la asimetría real de la red de carreteras (donde los sentidos de circulación, circunvalaciones y peajes hacen que el trayecto de ida difiera del de vuelta).
+   - DIMENSION: 47 (capitales peninsulares).
+   - EDGE_WEIGHT_TYPE: EXPLICIT y EDGE_WEIGHT_FORMAT: FULL_MATRIX.
+   - EDGE_WEIGHT_SECTION: Matriz completa de costos calculada (47x47).
+
+3. Exportación y compatibilidad: Guarda cada instancia con el nombre "espana47_hora_<sufijo>.tsp" y garantiza el salto de línea final tras la etiqueta "EOF" para asegurar la compatibilidad estricta con los parsers de tsplib95.
+
+4. Objetivo del análisis paramétrico: Al generar estas instancias con diferentes valores de hora, se evalúa cómo cambia la ruta óptima elegida por las metaheurísticas. A mayor costo de la hora del vendedor, el tiempo de conducción adquiere más peso relativo, incentivando a los algoritmos a seleccionar rutas con mayor peaje o kilometraje si a cambio reducen significativamente las horas totales de viaje.
+
+
+¿Cómo funciona la Colonia de Hormigas (colonia_hormigas_sk.py)?
+
+Implementa el algoritmo Ant Colony Optimization (ACO) mediante la librería scikit-opt (sko.ACA.ACA_TSP):
+1. Carga cada instancia de "instancias_tsp/*.tsp" con tsplib95.load() extrayendo la matriz de costos completa.
+2. Inicializa 60 hormigas artificiales que recorren las 47 ciudades durante 150 iteraciones depositando y evaporando feromonas artificiales según la calidad de los recorridos.
+3. Almacena para cada iteración la mejor ruta (secuencia de ciudades) y el mejor costo acumulado.
+4. Calcula el desglose físico y económico de la solución óptima usando las matrices preparadas:
+   - Distancia total recorrida (km) mediante "distancias_espana_km.csv".
+   - Horas totales de viaje mediante "tiempos_espana_h.csv".
+   - Costo total de combustible (€) mediante "combustible_espana_eur.csv".
+   - Costo total de peajes (€) mediante "peajes_espana_eur.csv".
+   - Costo laboral del vendedor (€) = horas de viaje * valor de la hora.
+5. Exporta todos los datos en "datos_graficas/": resultados_aco.json (con las trayectorias completas y desgloses), resumen_experimentos_aco.csv (métricas comparativas) y convergencia_aco.csv (curvas de costo).
+
+
+¿Cómo funciona el visualizador estandarizado de rutas y GIFs (visualizador_tsp.py)?
+
+Es un módulo agnóstico y desacoplado, diseñado para recibir historiales de cualquier metaheurística (Colonia de Hormigas, Algoritmos Genéticos, etc.):
+1. Lee las posiciones geográficas de las 47 capitales desde ciudades_espana.csv.
+2. Para cada valor de hora, genera una animación GIF de 2 paneles sincronizados en "gifs/":
+   - Panel izquierdo: Mapa geográfico de España peninsular trazando la evolución de la ruta ciclo a ciclo sobre las 47 ciudades, indicando la distancia total en km.
+   - Panel derecho: Curva de convergencia mostrando el descenso del costo mínimo a lo largo de las iteraciones.
+3. Genera además una imagen estática de alta resolución (comparativa_rutas_horas.png) con una cuadrícula de todas las rutas óptimas finales para contrastar el impacto del valor de la hora del vendedor (mostrando costo total, distancia en km, tiempo en horas y desgloses de peajes y combustible).
