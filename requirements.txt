@@ -1,3 +1,11 @@
+# Parte 1 (optimizacion numerica) y Parte 2 (TSP)
 numpy>=1.26
 matplotlib>=3.8
 pillow>=10.0
+
+# Solo Parte 2
+pandas>=2.0
+requests>=2.31        # Obtenedor.py (consulta de distancias/tiempos)
+seaborn>=0.13
+scikit-opt>=0.6.6     # modulo `sko` (GA_TSP, ACA_TSP)
+tsplib95>=0.7.1       # generar_tsp.py
