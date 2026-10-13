@@ -1,15 +1,16 @@
 import argparse
+import json
+import sys
 from pathlib import Path
 
 import numpy as np
 
 import optimizers
 from experiments import ejecutar_optimizador, evals_equivalentes, run_experiments
+from problems import PROBLEMAS
 from visualize import make_gd_gif, make_metaheuristic_gif
 
-CONFIG_POR_DEFECTO = (
-    Path(__file__).resolve().parent / "configs" / "CLI_defaults_schwefel.json"
-)
+RAIZ = Path(__file__).resolve().parent
 
 MIN_CORRIDAS = 30
 
@@ -30,7 +31,6 @@ HIPERPARAMETROS = {
 
 
 def cargar_config(ruta):
-    import json
     ruta = Path(ruta)
     if not ruta.is_file():
         raise FileNotFoundError(f"No se encontró el archivo de configuración: {ruta}")
@@ -40,18 +40,21 @@ def cargar_config(ruta):
 
 def crear_parser():
     p = argparse.ArgumentParser(
-        description="Ejecutor de optimizadores para la función de Schwefel.",
+        description="Ejecutor de optimizadores para funciones de prueba (Schwefel, Rosenbrock).",
         epilog=(
             "Ejemplos:\n"
-            "  python run.py --algo pso                    # 1 corrida de PSO\n"
+            "  python run.py --algo pso                    # 1 corrida de PSO (Schwefel)\n"
+            "  python run.py --problem rosenbrock --algo de  # igual, en Rosenbrock\n"
             "  python run.py --algo pso --gif              # 1 corrida + GIF (dim 2)\n"
             "  python run.py --algo pso de --experiment    # 30 corridas de PSO y DE + comparación\n"
             "  python run.py --compare --runs 50           # los 4 algoritmos, 50 corridas c/u\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    p.add_argument("--config", default=str(CONFIG_POR_DEFECTO),
-                   help="Ruta del JSON de configuración.")
+    p.add_argument("--problem", choices=list(PROBLEMAS), default="schwefel",
+                   help="Función objetivo (por defecto: schwefel).")
+    p.add_argument("--config", default=None,
+                   help="Ruta del JSON de configuración (por defecto configs/CLI_defaults_<problem>.json).")
     p.add_argument("--algo", nargs="+", choices=[*ALGORITMOS, "all"],
                    help="Uno o varios algoritmos (gd ea pso de, o 'all').")
     p.add_argument("--experiment", action="store_true",
@@ -66,8 +69,8 @@ def crear_parser():
 
     p.add_argument("--gif", action="store_true",
                    help="Genera el GIF (solo una corrida individual en dim = 2).")
-    p.add_argument("--gif-dir", default="gifs",
-                   help="Directorio de salida del GIF (por defecto: gifs).")
+    p.add_argument("--gif-dir", default=str(RAIZ / "gifs"),
+                   help="Directorio de salida del GIF (por defecto: gifs/).")
 
     p.add_argument("--dim", type=int)
     p.add_argument("--runs", type=int, help="Corridas por algoritmo (mínimo 30).")
@@ -88,17 +91,17 @@ def crear_parser():
                            type=int if nombre == "pop_size" else float)
     return p
 
-def construir_parametros(args, config, algo):
+def construir_parametros(args, config, algo, problema):
     """Precedencia: CLI > sección del algoritmo > sección common."""
     exp, common = config["experiment"], config["common"]
 
     def elegir(cli, valor):
         return valor if cli is None else cli
 
-    dim = elegir(args.dim, exp["dimensions"][0])
+    dim = elegir(args.dim, exp["dim"])
     seed = elegir(args.seed, exp["seed"])
     runs = elegir(args.runs, exp["runs"])
-    bounds = tuple(elegir(args.bounds, common["bounds"]))
+    bounds = tuple(elegir(args.bounds, problema.bounds))
     threshold = elegir(args.threshold, exp["success_threshold"])
 
     params = dict(config[algo])
@@ -113,6 +116,8 @@ def construir_parametros(args, config, algo):
         params.setdefault("pop_size", common["pop_size"])
         params["record_population"] = args.gif  # solo si hay GIF que dibujar
 
+    if dim < problema.dim_min:
+        raise ValueError(f"{problema.nombre} requiere dim >= {problema.dim_min}.")
     return dim, seed, runs, bounds, threshold, params
 
 # --------------------------------------------------------------------------
@@ -173,11 +178,12 @@ def imprimir_comparacion(etiquetas, resumenes):
         print("\nAviso: algún optimizador no devolvió 'n_evals_grad'; "
               "se asumió 0 y 'Evals eq.' puede subestimar su costo.")
 
-def generar_gif(algo, res, umbral, directorio):
+def generar_gif(problema, algo, res, umbral, directorio):
     comunes = dict(
+        problema=problema,
         hist_x=res["historial_x"],
         hist_f=res["historial_f"],
-        output_path=str(Path(directorio) / f"{algo}_2d.gif"),
+        output_path=str(Path(directorio) / f"{problema.nombre.lower()}_{algo}_2d.gif"),
         umbral=umbral,
     )
     if algo == "gd":
@@ -200,14 +206,14 @@ def resolver_algoritmos(parser, args):
         return list(ALGORITMOS)
     return list(dict.fromkeys(args.algo))  # sin repetidos, conserva el orden
 
-def modo_comparacion(args, config, algos):
+def modo_comparacion(args, config, algos, problema):
     resumenes = []
     for algo in algos:
-        dim, seed, runs, bounds, thr, params = construir_parametros(args, config, algo)
-        tag = f"{args.tag}_{algo}" if args.tag else f"{algo}_{dim}d_seed{seed}"
+        dim, seed, runs, bounds, thr, params = construir_parametros(args, config, algo, problema)
+        tag = f"{args.tag}_{algo}" if args.tag else f"{problema.nombre.lower()}_{algo}_{dim}d_seed{seed}"
         print(f"Corriendo {algo.upper()}: {runs} corridas...", flush=True)
         resumenes.append(run_experiments(
-            algoritmo_fn=ALGORITMOS[algo], dim=dim, n_runs=runs, base_seed=seed,
+            algoritmo_fn=ALGORITMOS[algo], problema=problema, dim=dim, n_runs=runs, base_seed=seed,
             tag=tag, umbral_exito=thr, bounds=bounds,
             costo_grad=args.grad_cost, guardar_historial=args.save_runs, **params,
         ))
@@ -215,36 +221,43 @@ def modo_comparacion(args, config, algos):
     print("\nResúmenes completos guardados en results/<tag>_summary.json")
 
 
-def modo_individual(args, config, algo):
-    dim, seed, _, bounds, threshold, params = construir_parametros(args, config, algo)
+def modo_individual(args, config, algo, problema):
+    dim, seed, _, bounds, threshold, params = construir_parametros(args, config, algo, problema)
     res = ejecutar_optimizador(
-        algoritmo_fn=ALGORITMOS[algo], dim=dim, seed=seed, bounds=bounds, **params
+        algoritmo_fn=ALGORITMOS[algo], problema=problema, dim=dim, seed=seed,
+        bounds=bounds, **params
     )
     mostrar_resultado(res, dim, args.grad_cost)
     if args.gif:
-        generar_gif(algo, res, threshold, args.gif_dir)
+        generar_gif(problema, algo, res, threshold, args.gif_dir)
 
 def main():
+    if hasattr(sys.stdout, "reconfigure"):      # consolas Windows (cp1252) fallan con "∇"
+        sys.stdout.reconfigure(encoding="utf-8")
     parser = crear_parser()
     args = parser.parse_args()
-    config = cargar_config(args.config)
+    problema = PROBLEMAS[args.problem]
+    config = cargar_config(args.config or RAIZ / "configs" / f"CLI_defaults_{args.problem}.json")
     algos = resolver_algoritmos(parser, args)
 
-    if args.experiment or args.compare:
-        if args.gif:
-            parser.error("--gif solo se usa en una corrida individual (sin --experiment/--compare).")
-        _, _, runs, _, _, _ = construir_parametros(args, config, algos[0])
-        if runs < MIN_CORRIDAS:
-            parser.error(f"Se requieren al menos {MIN_CORRIDAS} corridas por algoritmo (pediste {runs}).")
-        modo_comparacion(args, config, algos)
-        return
+    try:
+        if args.experiment or args.compare:
+            if args.gif:
+                parser.error("--gif solo se usa en una corrida individual (sin --experiment/--compare).")
+            runs = construir_parametros(args, config, algos[0], problema)[2]
+            if runs < MIN_CORRIDAS:
+                parser.error(f"Se requieren al menos {MIN_CORRIDAS} corridas por algoritmo (pediste {runs}).")
+            modo_comparacion(args, config, algos, problema)
+            return
 
-    if len(algos) > 1:
-        parser.error("Para varios algoritmos usa --experiment o --compare.")
-    dim = construir_parametros(args, config, algos[0])[0]
-    if args.gif and dim != 2:
-        parser.error("--gif solo está disponible para dim = 2.")
-    modo_individual(args, config, algos[0])
+        if len(algos) > 1:
+            parser.error("Para varios algoritmos usa --experiment o --compare.")
+        dim = construir_parametros(args, config, algos[0], problema)[0]
+        if args.gif and dim != 2:
+            parser.error("--gif solo está disponible para dim = 2.")
+        modo_individual(args, config, algos[0], problema)
+    except ValueError as e:
+        parser.error(str(e))
 
 if __name__ == "__main__":
     main()

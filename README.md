@@ -1,23 +1,115 @@
 # RNA-Trabajo1-Optimizacion-Metaheuristica-Combinatoria
-1. crear entorno virtual
-2. instalar dependiencias (luego pongo el requeriments.txt)
-3. ejecutar con consola de comandos desde Parte1/schwefel_project.py
-4. Comandos que puedes usar:
+
+Optimización de funciones de prueba (**Schwefel** y **Rosenbrock**) con cuatro algoritmos:
+descenso por gradiente (`gd`), algoritmo evolutivo (`ea`), enjambre de partículas (`pso`) y evolución diferencial (`de`).
+
+## Instalación
+
+**Requisitos:** Python 3.10 o superior (probado con 3.11) y estas librerías (ver [requirements.txt](requirements.txt)):
+
+| Librería   | Para qué se usa                      | Versión probada |
+|------------|--------------------------------------|-----------------|
+| numpy      | cálculo numérico y optimizadores     | 2.4.6           |
+| matplotlib | gráficas y animaciones               | 3.11.2          |
+| pillow     | escritura de los GIF                 | 12.3.0          |
+
+No se necesita GPU ni descargar datos: todo corre en CPU en segundos (los GIF tardan 1-2 min).
 
 ```bash
-# Un modelo, 30 corridas (o las que indiques con --runs)
-python run.py --algo pso --experiment
+# 1. Crear y activar el entorno virtual (desde la raíz del repo)
+python -m venv .venv
+.venv\Scripts\activate          # Windows (PowerShell/CMD)
+# source .venv/bin/activate     # Linux / macOS
 
-# Varios modelos que tú elijas, y los compara
-python run.py --algo pso de --experiment --runs 50
+# 2. Instalar dependencias
+pip install -r requirements.txt
 
-# Los 4 modelos, 30 corridas cada uno
-python run.py --compare
-
-# Una sola corrida (con GIF opcional)
-python run.py --algo gd
-python run.py --algo pso --gif
+# 3. Entrar a la carpeta del proyecto y ejecutar
+cd Parte_1/optimizacion_numerica
+python run.py --algo pso
 ```
+
+**Salidas:** los resúmenes (`*_summary.json`) y corridas guardadas van a `Parte_1/optimizacion_numerica/results/`; los GIF a `Parte_1/optimizacion_numerica/gifs/`.
+
+## Guía del CLI (`run.py`)
+
+Estructura general: `python run.py [--problem P] --algo A [opciones]`
+
+- `--problem schwefel|rosenbrock` (por defecto `schwefel`). Rosenbrock exige `--dim >= 2`.
+- `--algo gd ea pso de` (uno, varios, o `all`).
+- Sin `--experiment`/`--compare` hace **1 corrida**; con ellos hace **≥ 30 corridas** por algoritmo y muestra una tabla comparativa.
+
+### Corrida individual
+
+```bash
+python run.py --algo pso                               # Schwefel, 2D
+python run.py --algo de --dim 3                        # Schwefel, 3D
+python run.py --problem rosenbrock --algo pso          # Rosenbrock, 2D
+python run.py --problem rosenbrock --algo de --dim 3   # Rosenbrock, 3D
+python run.py --algo ea --seed 7                       # otra semilla
+```
+
+### GIF (solo 2D, corrida individual)
+
+```bash
+python run.py --algo pso --gif
+python run.py --problem rosenbrock --algo gd --gif
+python run.py --algo de --gif --gif-dir mis_gifs       # carpeta de salida
+```
+
+### Experimentos y comparación (mínimo 30 corridas)
+
+```bash
+python run.py --algo pso --experiment                  # 30 corridas de PSO
+python run.py --algo pso de --experiment --runs 50     # compara PSO y DE
+python run.py --compare                                # los 4 algoritmos, Schwefel 2D
+python run.py --compare --dim 3                        # los 4 algoritmos, 3D
+python run.py --problem rosenbrock --compare           # los 4 en Rosenbrock 2D
+python run.py --problem rosenbrock --compare --dim 3 --runs 50
+python run.py --compare --save-runs                    # guarda el historial de cada corrida (.npz)
+python run.py --compare --tag prueba1                  # nombre de los archivos de salida
+```
+
+### Hiperparámetros por optimizador
+
+Los valores por defecto están en `configs/CLI_defaults_<problema>.json`; cualquier flag de consola los sobrescribe.
+
+| Algoritmo | Flags                                                        |
+|-----------|--------------------------------------------------------------|
+| `gd`      | `--learning-rate`, `--tol`                                   |
+| `ea`      | `--pop-size`, `--mutation-rate`, `--mutation-scale`          |
+| `pso`     | `--pop-size`, `--w`, `--c1`, `--c2`                          |
+| `de`      | `--pop-size`, `--F`, `--CR`                                  |
+| todos     | `--max-iter`, `--dim`, `--seed`, `--bounds LO HI`, `--threshold` (umbral de éxito), `--runs` |
+
+```bash
+# Descenso por gradiente
+python run.py --algo gd --learning-rate 0.05 --max-iter 3000
+python run.py --problem rosenbrock --algo gd --learning-rate 1e-4 --max-iter 20000   # GD necesita lr pequeño aquí
+
+# Algoritmo evolutivo
+python run.py --algo ea --pop-size 80 --mutation-rate 0.2 --mutation-scale 0.05
+
+# PSO
+python run.py --algo pso --pop-size 60 --w 0.6 --c1 1.8 --c2 1.2
+
+# Evolución diferencial
+python run.py --algo de --F 0.5 --CR 0.8 --pop-size 60
+python run.py --problem rosenbrock --algo de --dim 3 --F 0.7 --CR 0.9 --max-iter 3000
+
+# Hiperparámetros dentro de una comparación (afectan solo al algoritmo que los tiene)
+python run.py --compare --pop-size 60 --max-iter 3000 --threshold 1e-2
+
+# Otro archivo de configuración
+python run.py --algo pso --config configs/CLI_defaults_rosenbrock.json
+```
+
+### Notas
+
+- La tabla de `--compare` reporta mejor/media/desv. de f, tasa de éxito (f ≤ umbral), iteraciones, evaluaciones de f y de gradiente, y evaluaciones equivalentes (1 gradiente = `2·dim` evaluaciones de f; cámbialo con `--grad-cost`).
+- Con las mismas semillas los resultados son reproducibles (`--seed`, por defecto 42).
+- En 3D o más suba `--max-iter` y/o `--pop-size` si la tasa de éxito baja.
+- Detalles de las funciones y del diseño: [Parte_1/optimizacion_numerica/Documentacion.md](Parte_1/optimizacion_numerica/Documentacion.md).
 
 # Guía inicial de GitFlow Simplificado
 

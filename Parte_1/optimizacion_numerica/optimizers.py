@@ -1,28 +1,9 @@
 import numpy as np
-from schwefel import schwefel
-
-def gradiente_schwefel(x):
-    """
-    Gradiente analítico exacto de la función de Schwefel para cualquier dimensión.
-    Funciona en 2D, 3D o vectores N-dimensionales.
-
-    d/dx [ x*sin(sqrt|x|) ] = sin(sqrt|x|) + (sqrt|x|/2) * cos(sqrt|x|)
-    (el signo de x ya queda absorbido en la derivada; NO se multiplica por sign(x)).
-    """
-    x = np.asarray(x, dtype=float)
-    sqrt_abs_x = np.sqrt(np.abs(x))
-    termino1 = -np.sin(sqrt_abs_x)
-    termino2 = -0.5 * sqrt_abs_x * np.cos(sqrt_abs_x)
-    grad = termino1 + termino2
-    grad = np.where(x == 0, 0.0, grad)
-
-    return grad
-
 
 def descenso_gradiente(
     f,
     x0,
-    grad_fn=gradiente_schwefel,
+    grad_fn,
     learning_rate=0.1,
     max_iter=1000,
     tol=1e-6,
@@ -30,7 +11,7 @@ def descenso_gradiente(
     record_every=1,
 ):
     """
-    Descenso por gradiente con gradiente analítico por defecto.
+    Descenso por gradiente con gradiente analítico (grad_fn).
 
     record_every controla cada cuántas iteraciones se guarda
     la trayectoria para el análisis y la visualización.
