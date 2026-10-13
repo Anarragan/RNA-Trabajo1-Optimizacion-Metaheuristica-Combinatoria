@@ -1,0 +1,8 @@
+{
+  "experiment": {"dim": 2, "runs": 30, "seed": 42, "success_threshold": 1e-3},
+  "common": {"max_iter": 2000, "pop_size": 40, "patience": 0},
+  "gd": {"learning_rate": 0.0001, "tol": 1e-8},
+  "ea": {"mutation_rate": 0.1, "mutation_scale": 0.1},
+  "pso": {"w": 0.7, "c1": 1.5, "c2": 1.5},
+  "de": {"F": 0.8, "CR": 0.9}
+}
