@@ -5,7 +5,7 @@ import pandas as pd
 import tsplib95
 
 
-VALORES_HORA_DEFAULT: List[float] = [0.0, 15.0, 25.0, 35.0, 50.0, 75.0]
+VALORES_HORA_DEFAULT: List[float] = [0.0, 15.0, 25.0, 35.0, 60.0]
 
 
 def crear_problema_tsp(

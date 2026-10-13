@@ -1,10 +1,29 @@
+"""
+Cálculo de la Matriz de Costos de Combustible para el TSP de España Peninsular (47 ciudades).
+
+Lee la matriz de distancias por carretera generada mediante OSRM y calcula
+el costo monetario directo en combustible (€) entre cada par de capitales,
+asumiendo el consumo medio de un turismo y el precio de mercado de la gasolina.
+"""
+
 import pandas as pd
 from pathlib import Path
 
+
 def generar_matriz_combustible():
     """
-    Lee la matriz de distancias y genera una nueva matriz NxN con el 
-    costo monetario del combustible en euros para cada trayecto.
+    Lee la matriz de distancias y genera una nueva matriz bidimensional (N x N) con el 
+    costo monetario del combustible en euros (€) para cada trayecto entre capitales.
+
+    Aplica un cálculo vectorizado basado en los parámetros de consumo del vehículo y
+    precio de mercado del combustible:
+        Costo (€) = (Distancia [km] / 100) * Consumo [L/100km] * Precio [€/L]
+
+    parametros:
+        Ninguno. Lee 'distancias_espana_km.csv' desde el directorio 'data/'.
+
+    retorna:
+        None. Exporta la matriz resultante redondeada a 2 decimales a 'data/combustible_espana_eur.csv'.
     """
     ruta_distancias = Path('data') / 'distancias_espana_km.csv'
     ruta_salida = Path('data') / 'combustible_espana_eur.csv'
