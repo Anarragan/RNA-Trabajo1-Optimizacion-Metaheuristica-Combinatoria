@@ -25,6 +25,8 @@ def descenso_gradiente(f, x0, grad_fn=None, learning_rate=0.001, max_iter=1000, 
     # Guardamos posición inicial y valor inicial
     hx, hf, n_evals = [x.copy()], [f(x)], 1
 
+    n_evals_grad = 0
+
     # Bandera: no hemos convergido
     convergio = False
 
@@ -56,11 +58,17 @@ def descenso_gradiente(f, x0, grad_fn=None, learning_rate=0.001, max_iter=1000, 
 
                 # Sumamos 2 evaluaciones de f (una por xp y otra por xm)
                 n_evals += 2
+            
+            #contamos 1 evaluación del gradiente(númerico)
+            n_evals_grad += 1
 
         # Si nos pasaron gradiente analítico
         else:
             # Calculamos el gradiente con la funcion analítica
             grad = grad_fn(x)
+
+            # contamos 1 evaluación del gradiente (ánalitico)
+            n_evals_grad += 1
 
         # Actualizamos posición y recortamos al rango
         x_new = np.clip(x - learning_rate * grad, lo, hi)
@@ -112,7 +120,11 @@ def descenso_gradiente(f, x0, grad_fn=None, learning_rate=0.001, max_iter=1000, 
         "convergio":bool(convergio),
 
         # Número total de evaluaciones de f 
-        "n_evals_f": n_evals, }
+        "n_evals_f": n_evals, 
+
+        "n_evals_grad": n_evals_grad,
+
+        }
 
 
 
@@ -152,6 +164,9 @@ def _resultado(nombre, hx, hf, it, convergio, n_evals, meta, pob=None):
 
     # Número total de evaluaciones de f
     "n_evals_f": n_evals,
+
+     # Los metaheurísticos no usan gradiente
+    "n_evals_grad": 0,
 
     # Info adicional del algoritmo
     "metadata": {"algoritmo": nombre, **meta},

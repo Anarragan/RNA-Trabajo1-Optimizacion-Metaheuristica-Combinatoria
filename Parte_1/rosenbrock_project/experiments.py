@@ -79,6 +79,8 @@ def run_experiments(algoritmo_fn, dim=2, n_runs=30, base_seed=0, tag=None,
 
     f_finales, x_finales, iteraciones, n_evals, exitos, convergio = [], [], [], [], [], []
 
+    n_evals_grad_list = []
+
     for run in range(n_runs):
         seed = base_seed + run
         res = ejecutar_optimizador(
@@ -96,6 +98,7 @@ def run_experiments(algoritmo_fn, dim=2, n_runs=30, base_seed=0, tag=None,
             "historial_f": res["historial_f"],
             "iteraciones": res["iteraciones"],
             "n_evals_f": res["n_evals_f"],
+            "n_evals_grad": res["n_evals_grad"],
             "seed": seed,
             "convergio": res["convergio"],
         }
@@ -108,6 +111,7 @@ def run_experiments(algoritmo_fn, dim=2, n_runs=30, base_seed=0, tag=None,
         x_finales.append(res["x_final"])
         iteraciones.append(res["iteraciones"])
         n_evals.append(res["n_evals_f"])
+        n_evals_grad_list.append(res.get("n_evals_grad", 0))
         exitos.append(res["f_final"] <= umbral_exito)
         convergio.append(res["convergio"])
 
@@ -125,6 +129,7 @@ def run_experiments(algoritmo_fn, dim=2, n_runs=30, base_seed=0, tag=None,
         "peor": float(np.max(f_finales)),
         "tasa_exito": float(np.mean(exitos)),
         "media_evals_f": float(np.mean(n_evals)),
+        "media_evals_grad":float(np.mean(n_evals_grad_list)),
         "media_iteraciones": float(np.mean(iteraciones)),
         "tasa_convergencia": float(np.mean(convergio)),
         "f_finales": [float(v) for v in f_finales],

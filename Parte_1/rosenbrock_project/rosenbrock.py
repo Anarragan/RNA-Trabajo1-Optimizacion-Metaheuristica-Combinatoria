@@ -14,6 +14,7 @@ def rosenbrock(x):
     Función de Rosenbrock estándar
 
     Dominio típico: [-5, 10]
+     Dominio usado en este trabajo: [-2, 2].
     Mínimo global:
         x_i = 1.0 para todo i
         f(x*) = 0.0    

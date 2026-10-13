@@ -17,10 +17,8 @@ from rosenbrock import gradiente_rosenbrock  # Importamos el gradiente (para mos
 LIM = 2        # Rango del mapa de Rosenbrock que vamos a dibujar (de -2 a 2)
 EPS = 1e-8     # Número muy pequeño para evitar log(0)
 
-
-# ============================================================================
 # UTILIDADES
-# ============================================================================
+
 
 @lru_cache(maxsize=None)  # Cachea el resultado: solo calcula la malla la primera vez
 def _malla(n=250):  # Función que calcula la superficie de Rosenbrock sobre una rejilla
@@ -65,9 +63,9 @@ def _fondo_2d(ax):  # Dibuja el mapa de fondo con la superficie de Rosenbrock
     ax.figure.colorbar(im, ax=ax, label="f(x)", shrink=0.8, pad=0.02)  # Barra de colores lateral
 
 
-# ============================================================================
+
 # MOTOR DE ANIMACIÓN
-# ============================================================================
+
 
 @dataclass  # Decorador que convierte esto en una clase con atributos automáticos
 class Panel:  # Clase que representa un panel de la parte derecha del GIF
@@ -163,9 +161,9 @@ def _animar(hist_x, paneles, titulo, output_path, *, extra=None,  # Función pri
     print(f"Animación guardada en: {out}")  # Avisamos al usuario
 
 
-# ============================================================================
+
 # API PÚBLICA: las dos funciones que usa run.py
-# ============================================================================
+
 
 def make_gd_gif(hist_x, hist_f, output_path, n_frames=60, fps=10, dpi=90,
                 umbral=1e-3):  # Función que genera el GIF de descenso por gradiente
