@@ -1,19 +1,10 @@
-"""
-Extracción de Matrices de Distancias y Tiempos de Conducción vía OSRM API.
-
-Consulta el servicio Table de Open Source Routing Machine (OSRM) para las 47 capitales
-peninsulares de España, obteniendo en una única petición HTTP las distancias de conducción
-y tiempos de viaje reales por carretera (algoritmos de Contraction Hierarchies).
-Exporta los datos procesados en formato CSV para su consumo offline por las metaheurísticas.
-"""
-
 import json
 import time
 from pathlib import Path
 import pandas as pd
 import requests
 
-# 1. Definición de las 47 capitales peninsulares con coordenadas (Latitud, Longitud)
+# Definición de las 47 capitales peninsulares con coordenadas (Latitud, Longitud)
 # Fuente de coordenadas: Nomenclátor Geográfico Básico de España (IGN)
 CAPITALES = [
     {"ciudad": "A Coruña", "lat": 43.3713, "lon": -8.3960},
@@ -94,8 +85,8 @@ def obtener_matrices():
     Procesa la respuesta JSON del motor OSRM:
     - Convierte duraciones de viaje de segundos a horas (durations / 3600.0).
     - Convierte distancias de conducción de metros a kilómetros (distances / 1000.0).
-    - Exporta tres archivos estáticos en la carpeta 'data/':
-        1. 'ciudades_espana.csv': Listado de las 47 capitales con sus coordenadas.
+    - Exporta tres archivos en 'data/':
+        1. 'ciudades_espana.csv': Lista de las 47 capitales con sus coordenadas.
         2. 'distancias_espana_km.csv': Matriz 47x47 de distancias de conducción (km).
         3. 'tiempos_espana_h.csv': Matriz 47x47 de tiempos de viaje en carretera (horas).
 
@@ -132,8 +123,8 @@ def obtener_matrices():
     df_ciudades = pd.DataFrame(CAPITALES)
 
     # Crear carpeta de datos si no existe
-    output_dir = Path("data")
-    output_dir.mkdir(exist_ok=True)
+    output_dir = Path(__file__).resolve().parent / "data"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Exportar datos limpios
     df_ciudades.to_csv(output_dir / "ciudades_espana.csv", index=False)
