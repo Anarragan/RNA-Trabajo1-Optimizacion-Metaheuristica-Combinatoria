@@ -1,3 +1,12 @@
+"""
+Extracción de Matrices de Distancias y Tiempos de Conducción vía OSRM API.
+
+Consulta el servicio Table de Open Source Routing Machine (OSRM) para las 47 capitales
+peninsulares de España, obteniendo en una única petición HTTP las distancias de conducción
+y tiempos de viaje reales por carretera (algoritmos de Contraction Hierarchies).
+Exporta los datos procesados en formato CSV para su consumo offline por las metaheurísticas.
+"""
+
 import json
 import time
 from pathlib import Path
@@ -58,7 +67,19 @@ CAPITALES = [
 
 
 def construir_url_osrm(coordenadas):
-    """OSRM exige el formato: {longitud},{latitud} separados por punto y coma."""
+    """
+    Construye la URL de consulta para el servicio Table de la API de OSRM en modo conducción.
+
+    Formatea las coordenadas en el estándar GeoJSON exigido estrictamente por OSRM:
+    {longitud},{latitud} separadas por punto y coma (;).
+
+    parametros:
+        coordenadas (list): Lista de diccionarios con las coordenadas geográficas de cada ciudad,
+                            donde cada elemento contiene las claves 'lon' (float) y 'lat' (float).
+
+    retorna:
+        str: URL completa formateada con parámetros annotations=distance,duration.
+    """
     coords_str = ";".join([f"{c['lon']},{c['lat']}" for c in coordenadas])
     base_url = "http://router.project-osrm.org/table/v1/driving/"
     # Pedimos explicitamente anotaciones de distancia y duracion
@@ -67,6 +88,20 @@ def construir_url_osrm(coordenadas):
 
 
 def obtener_matrices():
+    """
+    Consulta la API de OSRM para obtener las matrices de distancias y tiempos entre todas las capitales.
+
+    Procesa la respuesta JSON del motor OSRM:
+    - Convierte duraciones de viaje de segundos a horas (durations / 3600.0).
+    - Convierte distancias de conducción de metros a kilómetros (distances / 1000.0).
+    - Exporta tres archivos estáticos en la carpeta 'data/':
+        1. 'ciudades_espana.csv': Listado de las 47 capitales con sus coordenadas.
+        2. 'distancias_espana_km.csv': Matriz 47x47 de distancias de conducción (km).
+        3. 'tiempos_espana_h.csv': Matriz 47x47 de tiempos de viaje en carretera (horas).
+
+    retorna:
+        None. Genera y guarda los archivos CSV en disco.
+    """
     print(f"Obteniendo datos de ruta para {len(CAPITALES)} ciudades...")
 
     url = construir_url_osrm(CAPITALES)

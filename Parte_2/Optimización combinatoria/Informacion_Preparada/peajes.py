@@ -1,7 +1,33 @@
+"""
+Generación de la Matriz de Tarifas de Peajes en España Peninsular (47 ciudades).
+
+Inicializa una matriz simétrica NxN en 0.0 € (representando la red de autovías y carreteras
+gratuitas) e inyecta las tarifas oficiales vigentes de los corredores de autopistas de peaje
+(AP-6, AP-51, AP-61, AP-66, AP-71, AP-9, AP-53, AP-68, AP-8, AP-1, C-32, C-16, AP-46)
+para turismos ligeros, exportando el resultado a 'data/peajes_espana_eur.csv'.
+"""
+
 import pandas as pd
 from pathlib import Path
 
+
 def inyectar_peajes_peninsula():
+    """
+    Construye la matriz de costos de peaje entre todas las capitales peninsulares.
+
+    Procedimiento:
+    1. Lee los nombres de las 47 capitales desde 'data/ciudades_espana.csv'.
+    2. Crea una matriz cuadrada inicializada en ceros (0.0 €) con las ciudades como índices y columnas.
+    3. Itera sobre el catálogo de rutas con peaje activo e inyecta simétricamente los costos
+       tanto en el trayecto de ida como en el de vuelta (loc[origen, destino] y loc[destino, origen]).
+    4. Exporta la matriz final resultante a 'data/peajes_espana_eur.csv'.
+
+    parametros:
+        Ninguno. Lee 'ciudades_espana.csv' desde el directorio 'data/'.
+
+    retorna:
+        None. Exporta el archivo CSV con la matriz de peajes.
+    """
     ruta_ciudades = Path('data') / 'ciudades_espana.csv'
     ruta_salida = Path('data') / 'peajes_espana_eur.csv'
 

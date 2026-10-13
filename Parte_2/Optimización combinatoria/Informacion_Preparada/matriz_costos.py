@@ -1,8 +1,3 @@
-"""
-Cálculo y exportación de la matriz de costos totales para el TSP en España peninsular (47 ciudades).
-
-"""
-
 from pathlib import Path
 import numpy as np
 import pandas as pd
