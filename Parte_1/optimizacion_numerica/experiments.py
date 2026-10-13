@@ -1,19 +1,11 @@
-import os
 import json
 import time
 import inspect
+from pathlib import Path
+
 import numpy as np
 
-from schwefel import schwefel
-import optimizers
-
-RESULTS_DIR = "results"
-UMBRALES_EXITO = {
-    2: 1e-3,
-    3: 1e-2,
-    4: 5e-2,
-    5: 1e-1,
-}
+RESULTS_DIR = Path(__file__).resolve().parent / "results"
 
 def evals_equivalentes(res, dim, costo_grad=None):
     """
@@ -29,22 +21,22 @@ def evals_equivalentes(res, dim, costo_grad=None):
     return res["n_evals_f"] + costo_grad * res.get("n_evals_grad", 0)
 
 
-def ejecutar_optimizador(algoritmo_fn, dim=2, seed=None, f=schwefel,
-                         bounds=(-500.0, 500.0), **kwargs):
+def ejecutar_optimizador(algoritmo_fn, problema, dim=2, seed=None, bounds=None, **kwargs):
     """
     Ejecuta UNA corrida de cualquier optimizador y mide su tiempo.
 
     Retorna el dict del optimizador más la clave 'tiempo_s'.
     """
     rng = np.random.default_rng(seed)
+    bounds = bounds or problema.bounds
     lo, hi = bounds
 
     # Solo se envían los parámetros que la función soporta.
     params = inspect.signature(algoritmo_fn).parameters
 
-    opt_args = {}
-    if "f" in params:
-        opt_args["f"] = f
+    opt_args = {"f": problema.f}
+    if "grad_fn" in params:
+        opt_args["grad_fn"] = problema.grad
     if "dim" in params:
         opt_args["dim"] = dim
     if "bounds" in params:
@@ -70,12 +62,13 @@ def ejecutar_optimizador(algoritmo_fn, dim=2, seed=None, f=schwefel,
 
 def run_experiments(
     algoritmo_fn,
+    problema,
     dim=2,
     n_runs=30,
     base_seed=0,
     tag=None,
-    umbral_exito=None,
-    bounds=(-500.0, 500.0),
+    umbral_exito=1e-3,
+    bounds=None,
     costo_grad=None,
     guardar_historial=True,
     **opt_kwargs
@@ -92,12 +85,11 @@ def run_experiments(
 
     nombre_algo = getattr(algoritmo_fn, "__name__", "optimizador")
     tag = tag or f"{nombre_algo}_{dim}d"
-    if umbral_exito is None:
-        umbral_exito = UMBRALES_EXITO.get(dim, 1e-1)
+    bounds = bounds or problema.bounds
     if costo_grad is None:
         costo_grad = 2 * dim
 
-    os.makedirs(RESULTS_DIR, exist_ok=True)
+    RESULTS_DIR.mkdir(exist_ok=True)
 
     f_fin, x_fin, iters = [], [], []
     ev_f, ev_g, ev_eq, tiempos = [], [], [], []
@@ -107,7 +99,7 @@ def run_experiments(
     for run in range(n_runs):
         seed = base_seed + run
         res = ejecutar_optimizador(
-            algoritmo_fn=algoritmo_fn, dim=dim, seed=seed,
+            algoritmo_fn=algoritmo_fn, problema=problema, dim=dim, seed=seed,
             bounds=bounds, **opt_kwargs
         )
 
@@ -126,7 +118,7 @@ def run_experiments(
             }
             if "historial_poblacion" in res:
                 datos["historial_poblacion"] = res["historial_poblacion"]
-            np.savez(os.path.join(RESULTS_DIR, f"{tag}_run{run:02d}.npz"), **datos)
+            np.savez(RESULTS_DIR / f"{tag}_run{run:02d}.npz", **datos)
 
         reporta_grad &= "n_evals_grad" in res
         f_fin.append(float(res["f_final"]))
@@ -144,6 +136,7 @@ def run_experiments(
 
     resumen = {
         "tag": tag,
+        "problema": problema.nombre,
         "algoritmo": nombre_algo,
         "dim": dim,
         "n_runs": n_runs,
@@ -171,11 +164,10 @@ def run_experiments(
         "config": {"base_seed": base_seed, "bounds": list(bounds), **opt_kwargs},
     }
 
-    with open(os.path.join(RESULTS_DIR, f"{tag}_summary.json"), "w") as fp:
-        json.dump(resumen, fp, indent=2)
+    (RESULTS_DIR / f"{tag}_summary.json").write_text(json.dumps(resumen, indent=2))
 
     return resumen
 
 def cargar_corrida(tag, run):
     """Carga los datos guardados de una corrida específica."""
-    return np.load(os.path.join(RESULTS_DIR, f"{tag}_run{run:02d}.npz"))
+    return np.load(RESULTS_DIR / f"{tag}_run{run:02d}.npz")

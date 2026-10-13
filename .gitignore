@@ -33,3 +33,10 @@ Thumbs.db
 .vscode/*
 
 
+
+# Entorno / IDE
+.vs/
+
+# Salidas generadas por el codigo (se reproducen ejecutando los scripts)
+Parte_2/Informacion_Preparada/datos_graficas/
+Parte_2/Informacion_Preparada/instancias_tsp/

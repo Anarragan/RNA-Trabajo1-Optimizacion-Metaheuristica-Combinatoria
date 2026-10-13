@@ -12,20 +12,17 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import FormatStrFormatter, NullFormatter
 
-from schwefel import schwefel, X_OPT
-from optimizers import gradiente_schwefel
-
-LIM = 500
 EPS = 1e-8
 # --------------------------------------------------------------------------
 # Utilidades
 # --------------------------------------------------------------------------
 @lru_cache(maxsize=None)
-def _malla(n=250):
-    """Superficie de Schwefel 2D (se calcula una sola vez)."""
-    g = np.linspace(-LIM, LIM, n)
+def _malla(problema, n=250):
+    """Superficie 2D del problema (se calcula una sola vez)."""
+    lo, hi = problema.bounds
+    g = np.linspace(lo, hi, n)
     XX, YY = np.meshgrid(g, g)
-    ZZ = schwefel(np.column_stack((XX.ravel(), YY.ravel()))).reshape(XX.shape)
+    ZZ = problema.f(np.column_stack((XX.ravel(), YY.ravel()))).reshape(XX.shape)
     return XX, YY, ZZ
 
 def _validar(hist_x, hist_f):
@@ -48,19 +45,22 @@ def _estado(f, k, T, umbral, activo):
         return "ÉXITO"
     return "FIN" if k == T else activo
 
-def _fondo_2d(ax):
+def _fondo_2d(ax, problema):
     """Mapa de la función + óptimo global."""
-    XX, YY, ZZ = _malla()
-    im = ax.imshow(ZZ, origin="lower", extent=[-LIM, LIM, -LIM, LIM],
+    lo, hi = problema.bounds
+    XX, YY, ZZ = _malla(problema)
+    if problema.log_color:
+        ZZ = np.log1p(ZZ)
+    im = ax.imshow(ZZ, origin="lower", extent=[lo, hi, lo, hi],
                    cmap="viridis", aspect="equal", interpolation="bilinear")
     # Pocos contornos y tenues: con muchos, la paleta de 256 colores del GIF
     # produce ruido y bandas visibles.
     ax.contour(XX, YY, ZZ, levels=12, colors="k", linewidths=0.3, alpha=0.25)
-    ax.plot(X_OPT, X_OPT, "*", color="red", markersize=15,
+    ax.plot(problema.x_opt, problema.x_opt, "*", color="red", markersize=15,
             markeredgecolor="white", label="Óptimo global", zorder=6)
     ax.set_xlabel("x1")
     ax.set_ylabel("x2")
-    ax.figure.colorbar(im, ax=ax, label="f(x)", shrink=0.8, pad=0.02)
+    ax.figure.colorbar(im, ax=ax, label="log(1+f)" if problema.log_color else "f(x)", shrink=0.8, pad=0.02)
 
 # --------------------------------------------------------------------------
 # Motor de animación común
@@ -83,7 +83,7 @@ def _ylim_auto(panel):
     pad = 0.08 * (hi - lo or 1.0)
     return lo - pad, hi + pad
 
-def _animar(hist_x, paneles, titulo, output_path, *, extra=None,
+def _animar(problema, hist_x, paneles, titulo, output_path, *, extra=None,
             etiqueta_punto="Posición actual", n_frames=60, fps=10,
             dpi=90, pausa_final=10):
     """
@@ -98,7 +98,7 @@ def _animar(hist_x, paneles, titulo, output_path, *, extra=None,
 
     # ---- mapa ----
     ax_m = fig.add_subplot(gs[:, 0])
-    _fondo_2d(ax_m)
+    _fondo_2d(ax_m, problema)
     ax_m.plot(*hist_x[0], "o", color="white", markeredgecolor="black",
               markersize=8, label="Inicio", zorder=5)
     halo = [pe.withStroke(linewidth=4, foreground="black")]
@@ -165,13 +165,13 @@ def _animar(hist_x, paneles, titulo, output_path, *, extra=None,
 # --------------------------------------------------------------------------
 # API pública
 # --------------------------------------------------------------------------
-def make_gd_gif(hist_x, hist_f, output_path, n_frames=60, fps=10, dpi=90,
+def make_gd_gif(problema, hist_x, hist_f, output_path, n_frames=60, fps=10, dpi=90,
                 umbral=1e-3):
     """Anima una ejecución de GD en 2D."""
     hist_x, hist_f = _validar(hist_x, hist_f)
     T = len(hist_f) - 1
-    grad = np.linalg.norm(gradiente_schwefel(hist_x), axis=1)
-    dist = np.linalg.norm(hist_x - X_OPT, axis=1)
+    grad = np.linalg.norm(problema.grad(hist_x), axis=1)
+    dist = np.linalg.norm(hist_x - problema.x_opt, axis=1)
     paso = np.r_[0.0, np.linalg.norm(np.diff(hist_x, axis=0), axis=1)]
 
     paneles = [
@@ -180,7 +180,7 @@ def make_gd_gif(hist_x, hist_f, output_path, n_frames=60, fps=10, dpi=90,
         Panel("Coordenadas", "x",
               [("x1", hist_x[:, 0], "tab:blue"),
                ("x2", hist_x[:, 1], "tab:orange")],
-              ylim=(-LIM, LIM), referencia=X_OPT),
+              ylim=problema.bounds, referencia=problema.x_opt),
         Panel("Gradiente y tamaño de paso", "magnitud",
               [("||∇f||", grad, "tab:red"), ("paso", paso, "tab:green")],
               log=True),
@@ -191,10 +191,10 @@ def make_gd_gif(hist_x, hist_f, output_path, n_frames=60, fps=10, dpi=90,
         return (f"GD | iter {k}/{T} | f={hist_f[k]:.5g} | "
                 f"||∇f||={grad[k]:.1e} | dist={dist[k]:.1f} | {e}")
 
-    _animar(hist_x, paneles, titulo, output_path,
+    _animar(problema, hist_x, paneles, titulo, output_path,
             n_frames=n_frames, fps=fps, dpi=dpi)
 
-def make_metaheuristic_gif(hist_pob, hist_x, hist_f, output_path, n_frames=60,
+def make_metaheuristic_gif(problema, hist_pob, hist_x, hist_f, output_path, n_frames=60,
                            fps=10, dpi=90, umbral=1e-3, nombre="PSO"):
     """
     Anima un optimizador poblacional en 2D.
@@ -208,7 +208,7 @@ def make_metaheuristic_gif(hist_pob, hist_x, hist_f, output_path, n_frames=60,
 
     T = len(hist_f) - 1
     diversidad = hist_pob.std(axis=1).mean(axis=1)
-    dist = np.linalg.norm(hist_x - X_OPT, axis=1)
+    dist = np.linalg.norm(hist_x - problema.x_opt, axis=1)
 
     paneles = [
         Panel("Mejor valor encontrado", "f(mejor) ajustada",
@@ -219,7 +219,7 @@ def make_metaheuristic_gif(hist_pob, hist_x, hist_f, output_path, n_frames=60,
         Panel("Coordenadas del mejor", "x",
               [("x1", hist_x[:, 0], "tab:blue"),
                ("x2", hist_x[:, 1], "tab:orange")],
-              ylim=(-LIM, LIM), referencia=X_OPT),
+              ylim=problema.bounds, referencia=problema.x_opt),
     ]
 
     def extra(ax):
@@ -233,6 +233,6 @@ def make_metaheuristic_gif(hist_pob, hist_x, hist_f, output_path, n_frames=60,
         return (f"{nombre} | gen {k}/{T} | f*={hist_f[k]:.5g} | "
                 f"diversidad={diversidad[k]:.1f} | dist={dist[k]:.1f} | {e}")
 
-    _animar(hist_x, paneles, titulo, output_path, extra=extra,
+    _animar(problema, hist_x, paneles, titulo, output_path, extra=extra,
             etiqueta_punto="Mejor solución",
             n_frames=n_frames, fps=fps, dpi=dpi)
