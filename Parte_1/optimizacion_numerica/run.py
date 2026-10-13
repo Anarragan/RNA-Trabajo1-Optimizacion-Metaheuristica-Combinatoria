@@ -24,9 +24,9 @@ ALGORITMOS = {
 # Hiperparámetros propios de cada algoritmo (los flags se generan a partir de aquí).
 HIPERPARAMETROS = {
     "gd": ("learning_rate", "tol"),
-    "ea": ("pop_size", "mutation_rate", "mutation_scale"),
-    "pso": ("pop_size", "w", "c1", "c2"),
-    "de": ("pop_size", "F", "CR"),
+    "ea": ("pop_size", "patience", "mutation_rate", "mutation_scale"),
+    "pso": ("pop_size", "patience", "w", "c1", "c2"),
+    "de": ("pop_size", "patience", "F", "CR"),
 }
 
 
@@ -88,7 +88,7 @@ def crear_parser():
             vistos.add(nombre)
             flag = "--" + (nombre if nombre in ("F", "CR") else nombre.replace("_", "-"))
             p.add_argument(flag, dest=nombre,
-                           type=int if nombre == "pop_size" else float)
+                           type=int if nombre in ("pop_size", "patience") else float)
     return p
 
 def construir_parametros(args, config, algo, problema):
@@ -114,6 +114,7 @@ def construir_parametros(args, config, algo, problema):
 
     if algo != "gd":
         params.setdefault("pop_size", common["pop_size"])
+        params.setdefault("patience", common.get("patience", 50))
         params["record_population"] = args.gif  # solo si hay GIF que dibujar
 
     if dim < problema.dim_min:

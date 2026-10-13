@@ -77,9 +77,9 @@ Los valores por defecto están en `configs/CLI_defaults_<problema>.json`; cualqu
 | Algoritmo | Flags                                                        |
 |-----------|--------------------------------------------------------------|
 | `gd`      | `--learning-rate`, `--tol`                                   |
-| `ea`      | `--pop-size`, `--mutation-rate`, `--mutation-scale`          |
-| `pso`     | `--pop-size`, `--w`, `--c1`, `--c2`                          |
-| `de`      | `--pop-size`, `--F`, `--CR`                                  |
+| `ea`      | `--pop-size`, `--patience`, `--mutation-rate`, `--mutation-scale`          |
+| `pso`     | `--pop-size`, `--patience`, `--w`, `--c1`, `--c2`                          |
+| `de`      | `--pop-size`, `--patience`, `--F`, `--CR`                                  |
 | todos     | `--max-iter`, `--dim`, `--seed`, `--bounds LO HI`, `--threshold` (umbral de éxito), `--runs` |
 
 ```bash
@@ -106,6 +106,7 @@ python run.py --algo pso --config configs/CLI_defaults_rosenbrock.json
 
 ### Notas
 
+- **Parada por estancamiento:** `ea`, `pso` y `de` se detienen si el mejor valor no mejora en `--patience` iteraciones (Schwefel: 50 por defecto; Rosenbrock: desactivado. `--patience N` lo cambia y `--patience 0` lo desactiva). `gd` no la usa.
 - La tabla de `--compare` reporta mejor/media/desv. de f, tasa de éxito (f ≤ umbral), iteraciones, evaluaciones de f y de gradiente, y evaluaciones equivalentes (1 gradiente = `2·dim` evaluaciones de f; cámbialo con `--grad-cost`).
 - Con las mismas semillas los resultados son reproducibles (`--seed`, por defecto 42).
 - En 3D o más suba `--max-iter` y/o `--pop-size` si la tasa de éxito baja.
