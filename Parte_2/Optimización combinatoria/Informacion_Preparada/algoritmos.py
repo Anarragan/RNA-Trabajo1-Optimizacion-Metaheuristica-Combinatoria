@@ -16,7 +16,7 @@ from sko.ACA import ACA_TSP
 from sko.GA import GA_TSP
 
 # El valor de hora dado por el INE (ETCL) esta alrededor de 25 euros la hora
-VALORES_HORA_DEFAULT: List[float] = [0.0, 15.0, 25.0, 35.0, 50.0, 75.0]
+VALORES_HORA_DEFAULT: List[float] = [0.0, 15.0, 25.0, 35.0, 60.0]
 
 
 def cargar_instancia_tsp(ruta_tsp: Path) -> Tuple[tsplib95.models.StandardProblem, np.ndarray]:
@@ -254,12 +254,13 @@ def ejecutar_experimentos_comparativos(
     dir_salida = directorio_base / carpeta_salida_datos
     dir_salida.mkdir(parents=True, exist_ok=True)
 
-    # Cargar matrices base para desglose
-    df_ciudades = pd.read_csv(directorio_base / "ciudades_espana.csv")
-    df_combustible = pd.read_csv(directorio_base / "combustible_espana_eur.csv", index_col=0)
-    df_peajes = pd.read_csv(directorio_base / "peajes_espana_eur.csv", index_col=0)
-    df_tiempos = pd.read_csv(directorio_base / "tiempos_espana_h.csv", index_col=0)
-    df_distancias = pd.read_csv(directorio_base / "distancias_espana_km.csv", index_col=0)
+    # Cargar matrices base para desglose desde la carpeta 'data/'
+    dir_datos = directorio_base / "data"
+    df_ciudades = pd.read_csv(dir_datos / "ciudades_espana.csv")
+    df_combustible = pd.read_csv(dir_datos / "combustible_espana_eur.csv", index_col=0)
+    df_peajes = pd.read_csv(dir_datos / "peajes_espana_eur.csv", index_col=0)
+    df_tiempos = pd.read_csv(dir_datos / "tiempos_espana_h.csv", index_col=0)
+    df_distancias = pd.read_csv(dir_datos / "distancias_espana_km.csv", index_col=0)
 
     nombres_ciudades = list(df_ciudades["ciudad"])
 

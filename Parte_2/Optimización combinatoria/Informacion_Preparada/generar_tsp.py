@@ -3,6 +3,7 @@ from typing import List, Optional
 import numpy as np
 import pandas as pd
 import tsplib95
+from generar_matrices import calcular_matriz_costos
 
 
 VALORES_HORA_DEFAULT: List[float] = [0.0, 15.0, 25.0, 35.0, 60.0]
@@ -84,25 +85,27 @@ def calcular_matriz_costos_hora(
     y el costo temporal del vendedor para un valor horario específico.
 
     Parámetros:
-        directorio_base (Path): Directorio donde estan los CSV con las matrices de costos.
+        directorio_base (Path): Directorio base donde se encuentra la carpeta 'data/'.
         valor_hora (float): Valor de la hora del vendedor (€/h).
 
     Retorna:
         pd.DataFrame: Matriz (47x47) con el costo monetario total consolidado entre cada par de ciudades.
     """
-    ruta_combustible = directorio_base / "combustible_espana_eur.csv"
-    ruta_peajes = directorio_base / "peajes_espana_eur.csv"
-    ruta_tiempos = directorio_base / "tiempos_espana_h.csv"
+    dir_datos = directorio_base / "data"
+    ruta_combustible = dir_datos / "combustible_espana_eur.csv"
+    ruta_peajes = dir_datos / "peajes_espana_eur.csv"
+    ruta_tiempos = dir_datos / "tiempos_espana_h.csv"
 
     df_combustible = pd.read_csv(ruta_combustible, index_col=0)
     df_peajes = pd.read_csv(ruta_peajes, index_col=0)
     df_tiempos = pd.read_csv(ruta_tiempos, index_col=0)
 
-    df_costo_tiempo = df_tiempos * valor_hora
-    df_costos_totales = df_combustible + df_peajes + df_costo_tiempo
-
-    np.fill_diagonal(df_costos_totales.values, 0.0) # Costo de i -> i debe ser 0
-    return df_costos_totales.round(2)
+    return calcular_matriz_costos(
+        df_combustible=df_combustible,
+        df_peajes=df_peajes,
+        df_tiempos=df_tiempos,
+        valor_hora_vendedor=valor_hora,
+    )
 
 
 def generar_instancias_tsp(
