@@ -1,0 +1,18 @@
+{
+  "experiment": {
+    "valores_hora": [25.0],
+    "seed": 42
+  },
+  "common": {
+    "pop_size": 60,
+    "max_iter": 120
+  },
+  "aco": {
+    "alpha": 1.0,
+    "beta": 2.0,
+    "rho": 0.1
+  },
+  "ga": {
+    "prob_mut": 0.1
+  }
+}
