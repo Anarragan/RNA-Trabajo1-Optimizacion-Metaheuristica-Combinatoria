@@ -2,7 +2,7 @@ Bibliografía:
 
 A. El Organismo Regulador (Quien controla las concesiones y aprueba las tarifas):
 
-Ministerio de Transportes y Movilidad Sostenible. (2026). Autopistas de Peaje: Red de Carreteras del Estado. Tarifas y concesiones vigentes. Gobierno de España. Recuperado el 10 de octubre de 2026, de https://www.transportes.gob.es/carreteras/peajes-y-concesiones
+Ministerio de Transportes y Movilidad Sostenible. (2026). Red de Carreteras del Estado. https://www.transportes.gob.es/carreteras/catalogo-y-evolucion-de-la-red-de-carreteras/archivos-geometrias-rce
 
 B. La Infraestructura Geográfica Oficial (Para confirmar qué es autovía libre y qué es autopista de peaje):
 

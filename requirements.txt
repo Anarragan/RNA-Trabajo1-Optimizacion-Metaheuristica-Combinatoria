@@ -9,3 +9,4 @@ requests>=2.31        # Obtenedor.py (consulta de distancias/tiempos)
 seaborn>=0.13
 scikit-opt>=0.6.6     # modulo `sko` (GA_TSP, ACA_TSP)
 tsplib95>=0.7.1       # generar_tsp.py
+geopandas>=1.0        # visualizador_tsp.py (capas geograficas RCE)

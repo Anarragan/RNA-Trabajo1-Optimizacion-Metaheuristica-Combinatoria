@@ -1,5 +1,7 @@
 # RNA-Trabajo1-Optimizacion-Metaheuristica-Combinatoria
 
+## Parte 1: Optimización Numérica (Schwefel y Rosenbrock)
+
 Optimización de funciones de prueba (**Schwefel** y **Rosenbrock**) con cuatro algoritmos:
 descenso por gradiente (`gd`), algoritmo evolutivo (`ea`), enjambre de partículas (`pso`) y evolución diferencial (`de`).
 
@@ -111,6 +113,50 @@ python run.py --algo pso --config configs/CLI_defaults_rosenbrock.json
 - Con las mismas semillas los resultados son reproducibles (`--seed`, por defecto 42).
 - En 3D o más suba `--max-iter` y/o `--pop-size` si la tasa de éxito baja.
 - Detalles de las funciones y del diseño: [Parte_1/optimizacion_numerica/Documentacion.md](Parte_1/optimizacion_numerica/Documentacion.md).
+
+## Parte 2: Optimización Combinatoria (TSP en España Peninsular)
+
+Resolución del Problema del Viajante de Comercio Asimétrico (**ATSP**) sobre las 47 capitales peninsulares usando dos metaheurísticas bioinspiradas: Colonia de Hormigas (`ACO`) y Algoritmo Genético (`GA`).
+El modelo optimiza el costo económico total considerando:
+- **Combustible:** Toyota Corolla 1995 E100 (consumo mixto 7.3 L/100 km).
+- **Peajes:** Tarifas oficiales de autopistas en España.
+- **Tiempo del vendedor:** Coste horario laboral (referencia INE: 25.0 €/h).
+
+Los datos y matrices están en `Parte_2/Optimización combinatoria/Informacion_Preparada/data/`.
+
+
+
+### Opciones del CLI (`run.py`)
+
+Estructura general: `python run.py [--algo {aco,ga,both}] [--horas H1 H2...] [opciones]`
+
+| Flag | Descripción | Por defecto |
+|---|---|---|
+| `--demo` | Demostración en vivo en segundos (tarifa 25.0 €/h) | Desactivado |
+| `--algo` | Algoritmo(s) a ejecutar: `aco`, `ga`, o `both` | `both` |
+| `--horas` | Tarifas horarias del vendedor en €/h (ej. `--horas 0 15 25 35 60`) | `[0.0, 15.0, 25.0, 35.0, 60.0]` |
+| `--pop-size` | Tamaño de población / número de hormigas | 60 |
+| `--max-iter` | Iteraciones máximas | 150 |
+| `--alpha` | [ACO] Peso de feromona | 1.0 |
+| `--beta` | [ACO] Peso de visibilidad heurística | 2.0 |
+| `--rho` | [ACO] Tasa de evaporación de feromonas | 0.1 |
+| `--prob-mut` | [GA] Probabilidad de mutación genética | 0.1 |
+| `--seed` | Semilla aleatoria reproducible | 42 |
+| `--gif` | Genera animaciones GIF y mosaico sobre la red de carreteras | Desactivado |
+| `--config` | Ruta a archivo JSON con parámetros personalizados | `configs/CLI_defaults_tsp.json` |
+| `--generar-matrices` | Regenera matrices base en data/ | Desactivado |
+| `--generar-instancias` | Regenera archivos .tsp en instancias_tsp/ | Desactivado |
+
+```bash
+# Ejemplos de personalización:
+python run.py --algo aco --horas 25.0 --pop-size 80 --max-iter 200
+python run.py --algo ga --prob-mut 0.15 --seed 123
+python run.py --config configs/demo.json
+```
+
+**Salidas:** Resultados numéricos (`.json`, `.csv`) en `Parte_2/Optimización combinatoria/Informacion_Preparada/datos_graficas/`; animaciones GIF y figuras en `Parte_2/Optimización combinatoria/GIFS/`.
+
+Detalles del modelo y diseño: [Parte_2/Optimización combinatoria/Documentacion.md](Parte_2/Optimización%20combinatoria/Documentacion.md).
 
 # Guía inicial de GitFlow Simplificado
 

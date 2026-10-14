@@ -54,14 +54,15 @@
       "Zaragoza"
     ],
     "tamano_poblacion": 60,
-    "max_iteraciones": 150
+    "max_iteraciones": 150,
+    "semilla": 42
   },
   "experimentos": {
     "hora_0": {
       "valor_hora_vendedor": 0.0,
       "ACO": {
         "mejor_costo_total": 578.14,
-        "tiempo_computo_s": 17.93,
+        "tiempo_computo_s": 15.39,
         "desglose": {
           "distancia_total_km": 6513.62,
           "costo_combustible_eur": 555.29,
@@ -7675,7 +7676,7 @@
       },
       "GA": {
         "mejor_costo_total": 835.34,
-        "tiempo_computo_s": 0.88,
+        "tiempo_computo_s": 0.83,
         "desglose": {
           "distancia_total_km": 9547.48,
           "costo_combustible_eur": 813.94,
@@ -15292,7 +15293,7 @@
       "valor_hora_vendedor": 15.0,
       "ACO": {
         "mejor_costo_total": 1868.3499999999997,
-        "tiempo_computo_s": 17.05,
+        "tiempo_computo_s": 16.36,
         "desglose": {
           "distancia_total_km": 6856.47,
           "costo_combustible_eur": 584.52,
@@ -22906,7 +22907,7 @@
       },
       "GA": {
         "mejor_costo_total": 2454.65,
-        "tiempo_computo_s": 0.94,
+        "tiempo_computo_s": 0.92,
         "desglose": {
           "distancia_total_km": 9155.78,
           "costo_combustible_eur": 780.54,
@@ -30523,7 +30524,7 @@
       "valor_hora_vendedor": 25.0,
       "ACO": {
         "mejor_costo_total": 2648.510000000001,
-        "tiempo_computo_s": 16.33,
+        "tiempo_computo_s": 16.45,
         "desglose": {
           "distancia_total_km": 6592.13,
           "costo_combustible_eur": 561.98,
@@ -38137,7 +38138,7 @@
       },
       "GA": {
         "mejor_costo_total": 3666.7200000000003,
-        "tiempo_computo_s": 0.9,
+        "tiempo_computo_s": 0.88,
         "desglose": {
           "distancia_total_km": 9384.52,
           "costo_combustible_eur": 800.01,
@@ -45754,7 +45755,7 @@
       "valor_hora_vendedor": 35.0,
       "ACO": {
         "mejor_costo_total": 3517.6400000000003,
-        "tiempo_computo_s": 15.61,
+        "tiempo_computo_s": 22.28,
         "desglose": {
           "distancia_total_km": 6739.31,
           "costo_combustible_eur": 574.53,
@@ -53368,7 +53369,7 @@
       },
       "GA": {
         "mejor_costo_total": 4637.68,
-        "tiempo_computo_s": 0.9,
+        "tiempo_computo_s": 1.7,
         "desglose": {
           "distancia_total_km": 9042.44,
           "costo_combustible_eur": 770.87,
@@ -60985,7 +60986,7 @@
       "valor_hora_vendedor": 60.0,
       "ACO": {
         "mejor_costo_total": 5502.130000000002,
-        "tiempo_computo_s": 16.77,
+        "tiempo_computo_s": 20.63,
         "desglose": {
           "distancia_total_km": 6680.5,
           "costo_combustible_eur": 569.52,
@@ -68599,7 +68600,7 @@
       },
       "GA": {
         "mejor_costo_total": 7108.669999999999,
-        "tiempo_computo_s": 0.89,
+        "tiempo_computo_s": 1.17,
         "desglose": {
           "distancia_total_km": 8695.38,
           "costo_combustible_eur": 741.3,

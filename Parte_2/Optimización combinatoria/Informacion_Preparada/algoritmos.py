@@ -216,6 +216,11 @@ def ejecutar_experimentos_comparativos(
     tamano_poblacion: int = 60,
     max_iteraciones: int = 150,
     semilla: int = 42,
+    alpha: float = 1.0,
+    beta: float = 2.0,
+    rho: float = 0.1,
+    prob_mutacion: float = 0.1,
+    algoritmos: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """
     Resuelve instancias TSP almacenando historiales completos tanto para la Colonia de 
@@ -229,23 +234,28 @@ def ejecutar_experimentos_comparativos(
         tamano_poblacion (int): Número de individuos/hormigas por iteración.
         max_iteraciones (int): Número máximo de iteraciones.
         semilla (int): Semilla del generador pseudoaleatorio.
+        alpha (float): Exponente de feromona para ACO.
+        beta (float): Exponente de visibilidad heurística para ACO.
+        rho (float): Tasa de evaporación de feromonas para ACO.
+        prob_mutacion (float): Probabilidad de mutación para GA.
+        algoritmos (list[str], opcional): Lista de algoritmos a ejecutar ('ACO', 'GA', o ambos).
 
     Retorna:
         Dict[str, Any]: Diccionario con los resultados de los experimentos, estructurado en:
             - 'metadata' (dict):
-                * 'algoritmos_comparados': Lista con los nombres de las metaheurísticas ejecutadas (ACO y GA).
+                * 'algoritmos_comparados': Lista con los nombres de las metaheurísticas ejecutadas.
                 * 'ciudades' (list[str]): Lista con los nombres de las 47 ciudades.
                 * 'tamano_poblacion' (int): Número de individuos / hormigas configurado.
                 * 'max_iteraciones' (int): Cantidad máxima de iteraciones ejecutadas.
                 * 'fecha' (str): Marca de tiempo del experimento.
             - 'experimentos' (dict): Diccionario indexado por cada instancia ('hora_{valor_hora}'), donde cada una contiene:
                 * 'valor_hora_vendedor': Valor de la hora del vendedor en EUR/h.
-                * 'ACO' y 'GA' (dict): Resultados de cada algoritmo:
+                * 'ACO' y/o 'GA' (dict): Resultados de cada algoritmo:
                     - 'mejor_costo_total' (float): Costo monetario total de la mejor ruta hallada (€).
                     - 'tiempo_computo_s' (float): Tiempo de cómputo en segundos.
-                    - 'desglose' (dict): Desglose logístico y económico (distancia_total_km, costo_combustible_eur, costo_peajes_eur, tiempo_total_horas, costo_tiempo_vendedor_eur, costo_total_eur).
-                    - 'mejor_ruta_indices' (list[int]): Lista de índices de ciudades que componen el mejor circuito.
-                    - 'mejor_ruta_ciudades' (list[str]): Lista de nombres de ciudades correspondientes a la mejor ruta.
+                    - 'desglose' (dict): Desglose logístico y económico.
+                    - 'mejor_ruta_indices' (list[int]): Lista de índices de ciudades de la mejor ruta.
+                    - 'mejor_ruta_ciudades' (list[str]): Lista de nombres de ciudades de la mejor ruta.
                     - 'historial_costos' (list[float]): Evolución del costo mínimo en cada iteración.
                     - 'historial_rutas' (list[list[int]]): Historial de las mejores trayectorias por iteración.
     """
@@ -267,17 +277,34 @@ def ejecutar_experimentos_comparativos(
     if valores_hora is None:
         valores_hora = VALORES_HORA_DEFAULT
 
+    # Normalizar algoritmos a ejecutar
+    if algoritmos is None:
+        algos_ejecutar = ["ACO", "GA"]
+    else:
+        algos_ejecutar = [a.upper() for a in algoritmos]
+
+    nombres_algos = []
+    if "ACO" in algos_ejecutar:
+        nombres_algos.append("Colonia de Hormigas (ACO)")
+    if "GA" in algos_ejecutar:
+        nombres_algos.append("Algoritmo Genético (GA)")
+
     print("=" * 80)
-    print("EJECUTANDO ACO Y GA SOBRE INSTANCIAS TSP DE ESPAÑA")
-    print(f"Hormigas por generación: {tamano_poblacion} | Iteraciones: {max_iteraciones}")
+    print(f"EJECUTANDO TSP EN ESPAÑA: {', '.join(nombres_algos)}")
+    print(f"Población/Hormigas: {tamano_poblacion} | Iteraciones: {max_iteraciones} | Semilla: {semilla}")
+    if "ACO" in algos_ejecutar:
+        print(f"Parámetros ACO: alpha={alpha}, beta={beta}, rho={rho}")
+    if "GA" in algos_ejecutar:
+        print(f"Parámetros GA:  prob_mut={prob_mutacion}")
     print("=" * 80)
 
     resultados_globales: Dict[str, Any] = {
         "metadata": {
-            "algoritmos_comparados": ["Colonia de Hormigas (ACO)", "Algoritmo Genético (GA)"],
+            "algoritmos_comparados": nombres_algos,
             "ciudades": nombres_ciudades,
             "tamano_poblacion": tamano_poblacion,
             "max_iteraciones": max_iteraciones,
+            "semilla": semilla,
         },
         "experimentos": {},
     }
@@ -291,37 +318,39 @@ def ejecutar_experimentos_comparativos(
         ruta_tsp = dir_instancias / f"espana47_hora_{sufijo}.tsp"
         
         if not ruta_tsp.exists():
-            print(f"No se encontró la instancia '{ruta_tsp}'.")
-            continue
+            print(f"Instancia '{ruta_tsp.name}' no encontrada. Generándola automáticamente...")
+            try:
+                from generar_tsp import generar_instancias_tsp
+                generar_instancias_tsp(valores_hora=[valor_hora], carpeta_instancias=carpeta_instancias)
+            except Exception as e:
+                print(f"Error generando la instancia '{ruta_tsp.name}': {e}")
+                continue
 
         print(f"\nInstancia: '{ruta_tsp.name}' (Valor hora: {valor_hora:.1f} EUR/h)")
         problema, matriz_costos = cargar_instancia_tsp(ruta_tsp)
 
-        # Ejecutar ACO
-        mejor_ruta_aco, mejor_costo_aco, hist_rutas_aco, hist_costos_aco, t_computo_aco = ejecutar_colonia_hormigas(
-            matriz_costos=matriz_costos, tamano_poblacion=tamano_poblacion, max_iteraciones=max_iteraciones, semilla=semilla
-        )
-        desglose_aco = calcular_desglose_costos(mejor_ruta_aco, df_combustible, df_peajes, df_tiempos, df_distancias, valor_hora)
-        nombres_ruta_aco = [nombres_ciudades[idx] for idx in mejor_ruta_aco]
-
-        # Ejecutar GA
-        mejor_ruta_ga, mejor_costo_ga, hist_rutas_ga, hist_costos_ga, t_computo_ga = ejecutar_algoritmo_genetico(
-            matriz_costos=matriz_costos, tamano_poblacion=tamano_poblacion, max_iteraciones=max_iteraciones, semilla=semilla
-        )
-        desglose_ga = calcular_desglose_costos(mejor_ruta_ga, df_combustible, df_peajes, df_tiempos, df_distancias, valor_hora)
-        nombres_ruta_ga = [nombres_ciudades[idx] for idx in mejor_ruta_ga]
-
-        print(f"  [ACO] Costo: {mejor_costo_aco:.2f} EUR | Tiempo de cómputo: {t_computo_aco} s")
-        print(f"  [GA]  Costo: {mejor_costo_ga:.2f} EUR | Tiempo de cómputo: {t_computo_ga} s")
-
-        # Almacenamiento de datos (Ambos algoritmos)
         clave_exp = f"hora_{sufijo}"
-        convergencia_dict[f"{clave_exp}_ACO"] = hist_costos_aco
-        convergencia_dict[f"{clave_exp}_GA"] = hist_costos_ga
-
         resultados_globales["experimentos"][clave_exp] = {
             "valor_hora_vendedor": valor_hora,
-            "ACO": {
+        }
+
+        # Ejecutar ACO si está solicitado
+        if "ACO" in algos_ejecutar:
+            mejor_ruta_aco, mejor_costo_aco, hist_rutas_aco, hist_costos_aco, t_computo_aco = ejecutar_colonia_hormigas(
+                matriz_costos=matriz_costos,
+                tamano_poblacion=tamano_poblacion,
+                max_iteraciones=max_iteraciones,
+                alpha=alpha,
+                beta=beta,
+                rho=rho,
+                semilla=semilla,
+            )
+            desglose_aco = calcular_desglose_costos(mejor_ruta_aco, df_combustible, df_peajes, df_tiempos, df_distancias, valor_hora)
+            nombres_ruta_aco = [nombres_ciudades[idx] for idx in mejor_ruta_aco]
+            print(f"  [ACO] Costo: {mejor_costo_aco:.2f} EUR | Tiempo de cómputo: {t_computo_aco} s")
+
+            convergencia_dict[f"{clave_exp}_ACO"] = hist_costos_aco
+            resultados_globales["experimentos"][clave_exp]["ACO"] = {
                 "mejor_costo_total": mejor_costo_aco,
                 "tiempo_computo_s": t_computo_aco,
                 "desglose": desglose_aco,
@@ -329,8 +358,24 @@ def ejecutar_experimentos_comparativos(
                 "mejor_ruta_ciudades": nombres_ruta_aco,
                 "historial_costos": hist_costos_aco,
                 "historial_rutas": hist_rutas_aco,
-            },
-            "GA": {
+            }
+            resumen_filas.append({"Algoritmo": "ACO", "valor_hora_eur": valor_hora, "tiempo_computo_s": t_computo_aco, **desglose_aco})
+
+        # Ejecutar GA si está solicitado
+        if "GA" in algos_ejecutar:
+            mejor_ruta_ga, mejor_costo_ga, hist_rutas_ga, hist_costos_ga, t_computo_ga = ejecutar_algoritmo_genetico(
+                matriz_costos=matriz_costos,
+                tamano_poblacion=tamano_poblacion,
+                max_iteraciones=max_iteraciones,
+                prob_mutacion=prob_mutacion,
+                semilla=semilla,
+            )
+            desglose_ga = calcular_desglose_costos(mejor_ruta_ga, df_combustible, df_peajes, df_tiempos, df_distancias, valor_hora)
+            nombres_ruta_ga = [nombres_ciudades[idx] for idx in mejor_ruta_ga]
+            print(f"  [GA]  Costo: {mejor_costo_ga:.2f} EUR | Tiempo de cómputo: {t_computo_ga} s")
+
+            convergencia_dict[f"{clave_exp}_GA"] = hist_costos_ga
+            resultados_globales["experimentos"][clave_exp]["GA"] = {
                 "mejor_costo_total": mejor_costo_ga,
                 "tiempo_computo_s": t_computo_ga,
                 "desglose": desglose_ga,
@@ -339,13 +384,9 @@ def ejecutar_experimentos_comparativos(
                 "historial_costos": hist_costos_ga,
                 "historial_rutas": hist_rutas_ga,
             }
-        }
+            resumen_filas.append({"Algoritmo": "GA", "valor_hora_eur": valor_hora, "tiempo_computo_s": t_computo_ga, **desglose_ga})
 
-        # Filas para el dataframe resumen
-        resumen_filas.append({"Algoritmo": "ACO", "valor_hora_eur": valor_hora, "tiempo_computo_s": t_computo_aco, **desglose_aco})
-        resumen_filas.append({"Algoritmo": "GA", "valor_hora_eur": valor_hora, "tiempo_computo_s": t_computo_ga, **desglose_ga})
-
-    # Guardar resultados en el disco
+    # Guardar resultados
     ruta_json = dir_salida / "resultados_comparativos.json"
     with open(ruta_json, "w", encoding="utf-8") as f:
         json.dump(resultados_globales, f, indent=2, ensure_ascii=False)
@@ -376,7 +417,8 @@ def ejecutar_experimentos_comparativos(
     sep_double = "=" * len(header)
 
     print("\n" + sep_double)
-    print("RESUMEN COMPARATIVO (ACO vs GA) X VALOR DE HORA DEL VENDEDOR:")
+    tit_algos = "ACO vs GA" if len(algos_ejecutar) > 1 else algos_ejecutar[0]
+    print(f"RESUMEN DE RESULTADOS ({tit_algos}) X VALOR DE HORA DEL VENDEDOR:")
     print(sep_double)
     print(header)
     print(sep_double)
