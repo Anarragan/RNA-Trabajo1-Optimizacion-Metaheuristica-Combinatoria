@@ -156,6 +156,8 @@ def run_experiments(
         "media_evals_equiv": float(np.mean(ev_eq)),
         "std_evals_equiv": float(np.std(ev_eq, ddof=1)) if n_runs > 1 else 0.0,
         "grad_reportado": bool(reporta_grad),
+        # Expected Running Time: E_eq promedio / proporción de éxito (None = infinito)
+        "ert": float(np.mean(ev_eq) / np.mean(exitos)) if np.mean(exitos) > 0 else None,
         # Otros
         "media_iteraciones": float(np.mean(iters)),
         "media_tiempo_s": float(np.mean(tiempos)),

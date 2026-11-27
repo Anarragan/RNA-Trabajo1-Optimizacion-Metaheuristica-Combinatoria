@@ -9,6 +9,7 @@ def descenso_gradiente(
     tol=1e-6,
     bounds=(-500.0, 500.0),
     record_every=1,
+    target=None,
 ):
     """
     Descenso por gradiente con gradiente analítico (grad_fn).
@@ -31,6 +32,8 @@ def descenso_gradiente(
         n_grad += 1                                   # <- un gradiente por iteración
         convergio = np.linalg.norm(x_new - x) < tol
         x = x_new
+        if target is not None and f(x) <= target:   # objetivo alcanzado (regla común)
+            convergio = True
 
         if it % record_every == 0 or convergio or it == max_iter:
             hx.append(x.copy()); hf.append(f(x))
@@ -65,7 +68,8 @@ def _resultado(nombre, hx, hf, it, convergio, n_evals, meta, pob=None):
     return out
 
 def pso(f, dim, rng, pop_size=40, max_iter=300, w=0.7298, c1=1.49618, c2=1.49618,
-        vmax_frac=0.2, tol=1e-6, patience=50, bounds=(-500.0, 500.0), record_population=False):
+        vmax_frac=0.2, tol=1e-6, patience=50, bounds=(-500.0, 500.0), record_population=False,
+        target=None):
     """Optimización por enjambre de partículas (PSO) con coeficientes de constricción."""
     lo, hi = bounds
     vmax = vmax_frac * (hi - lo)
@@ -90,7 +94,7 @@ def pso(f, dim, rng, pop_size=40, max_iter=300, w=0.7298, c1=1.49618, c2=1.49618
             gbest, gbest_f = pbest[i].copy(), pbest_f[i]
         hx.append(gbest.copy()); hf.append(gbest_f)
         if record_population: pob.append(x.copy())
-        if _diversidad(x) < tol or _estancado(hf, patience):
+        if (target is not None and hf[-1] <= target) or _diversidad(x) < tol or _estancado(hf, patience):
             convergio = True
             break
 
@@ -99,7 +103,8 @@ def pso(f, dim, rng, pop_size=40, max_iter=300, w=0.7298, c1=1.49618, c2=1.49618
                            vmax_frac=vmax_frac, tol=tol, patience=patience), pob)
 
 def evolucion_diferencial(f, dim, rng, pop_size=40, max_iter=300, F=0.6, CR=0.9,
-                          tol=1e-6, patience=50, bounds=(-500.0, 500.0), record_population=False):
+                          tol=1e-6, patience=50, bounds=(-500.0, 500.0), record_population=False,
+        target=None):
     """Evolución diferencial DE/rand/1/bin."""
     if pop_size < 4:
         raise ValueError("DE necesita pop_size >= 4")
@@ -126,7 +131,7 @@ def evolucion_diferencial(f, dim, rng, pop_size=40, max_iter=300, F=0.6, CR=0.9,
         i = fx.argmin()
         hx.append(x[i].copy()); hf.append(fx[i])
         if record_population: pob.append(x.copy())
-        if _diversidad(x) < tol or _estancado(hf, patience):
+        if (target is not None and hf[-1] <= target) or _diversidad(x) < tol or _estancado(hf, patience):
             convergio = True
             break
 
@@ -135,7 +140,8 @@ def evolucion_diferencial(f, dim, rng, pop_size=40, max_iter=300, F=0.6, CR=0.9,
 
 def algoritmo_evolutivo(f, dim, rng, pop_size=40, max_iter=300, pc=0.9, mutation_rate=0.2,
                         mutation_scale=0.1, elite=2, torneo_k=3, alpha=0.5, tol=1e-6,
-                        patience=50, bounds=(-500.0, 500.0), record_population=False):
+                        patience=50, bounds=(-500.0, 500.0), record_population=False,
+        target=None):
     """Algoritmo genético de codificación real: torneo, cruce BLX-alpha,
     mutación gaussiana decreciente y elitismo."""
     lo, hi = bounds
@@ -169,7 +175,7 @@ def algoritmo_evolutivo(f, dim, rng, pop_size=40, max_iter=300, pc=0.9, mutation
         i = fx.argmin()
         hx.append(x[i].copy()); hf.append(fx[i])
         if record_population: pob.append(x.copy())
-        if _diversidad(x) < tol or _estancado(hf, patience):
+        if (target is not None and hf[-1] <= target) or _diversidad(x) < tol or _estancado(hf, patience):
             convergio = True
             break
 

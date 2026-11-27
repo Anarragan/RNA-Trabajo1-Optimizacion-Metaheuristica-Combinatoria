@@ -76,6 +76,10 @@ def crear_parser():
     p.add_argument("--runs", type=int, help="Corridas por algoritmo (mínimo 30).")
     p.add_argument("--seed", type=int)
     p.add_argument("--max-iter", type=int)
+    p.add_argument("--budget", type=int,
+                   help="Presupuesto común en evaluaciones equivalentes (E_eq). Si se da, "
+                        "fija max_iter de cada algoritmo: GD = budget/(2*dim), "
+                        "poblacionales = budget/pop_size. Ignora --max-iter.")
     p.add_argument("--bounds", type=float, nargs=2)
     p.add_argument("--threshold", type=float)
     p.add_argument("--tag")
@@ -117,6 +121,14 @@ def construir_parametros(args, config, algo, problema):
         params.setdefault("patience", common.get("patience", 50))
         params["record_population"] = args.gif  # solo si hay GIF que dibujar
 
+    # Presupuesto común en E_eq: mismo costo máximo para todos los algoritmos.
+    budget = elegir(args.budget, common.get("budget"))
+    if budget:
+        costo_iter = (args.grad_cost or 2 * dim) if algo == "gd" else params["pop_size"]
+        params["max_iter"] = int(budget // costo_iter)
+    # Regla de parada común: detenerse al alcanzar f <= umbral de éxito.
+    params["target"] = threshold
+
     if dim < problema.dim_min:
         raise ValueError(f"{problema.nombre} requiere dim >= {problema.dim_min}.")
     return dim, seed, runs, bounds, threshold, params
@@ -151,6 +163,7 @@ def imprimir_comparacion(etiquetas, resumenes):
         ("Evals f", "{:>10.0f}", lambda e, r: r["media_evals_f"]),
         ("Evals ∇f", "{:>9.0f}", lambda e, r: r["media_evals_grad"]),
         ("Evals eq.", "{:>10.0f}", lambda e, r: r["media_evals_equiv"]),
+        ("ERT", "{:>10}", lambda e, r: f"{r['ert']:.0f}" if r["ert"] is not None else "∞"),
         ("Tiempo s", "{:>9.4f}", lambda e, r: r["media_tiempo_s"]),
     ]
 
@@ -169,6 +182,7 @@ def imprimir_comparacion(etiquetas, resumenes):
     print(f"\nEvals eq. = Evals f + {r0['costo_grad_en_f']:g} x Evals ∇f "
           f"(1 gradiente = {r0['costo_grad_en_f']:g} evaluaciones de f). "
           "Los valores son promedios por corrida.")
+    print("ERT = Evals eq. promedio / tasa de éxito (∞ si no hubo éxitos).")
 
     print("\nMejor solución encontrada (la mejor de todas las corridas):")
     for e, r in zip(etiquetas, resumenes):
