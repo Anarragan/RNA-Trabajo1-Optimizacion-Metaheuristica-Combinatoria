@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -152,6 +153,18 @@ def crear_parser() -> argparse.ArgumentParser:
         help="Regenera los archivos .tsp en Informacion_Preparada/instancias_tsp/.",
     )
 
+    p.add_argument(
+        "--salida",
+        default=None,
+        help="Carpeta donde guardar resultados y GIFs de esta corrida (no sobrescribe los "
+             "resultados oficiales). Con --demo por defecto es 'resultados_demo/'.",
+    )
+    p.add_argument(
+        "--mostrar",
+        action="store_true",
+        help="Imprime el recorrido final ciudad por ciudad y abre el GIF generado (implica --gif).",
+    )
+
     return p
 
 
@@ -268,10 +281,24 @@ def main() -> None:
     config = cargar_config(ruta_cfg)
     params = resolver_parametros(args, config)
 
+    if args.mostrar:
+        args.gif = True
+
+    # Carpeta de salida: separada de los resultados oficiales si se pide (o en --demo)
+    salida = args.salida or ("resultados_demo" if args.demo else None)
+    dir_resultados = dir_gifs = None
+    if salida:
+        base = Path(salida)
+        if not base.is_absolute():
+            base = RAIZ_PARTE2 / base
+        dir_resultados, dir_gifs = base / "datos_graficas", base / "GIFS"
+        print(f"[INFO] Resultados de esta corrida en: {base}")
+
     t0 = time.time()
 
     # Ejecutar experimentos principales
-    ejecutar_experimentos_comparativos(
+    resultados = ejecutar_experimentos_comparativos(
+        carpeta_salida_datos=str(dir_resultados) if dir_resultados else "datos_graficas",
         valores_hora=params["valores_hora"],
         tamano_poblacion=params["tamano_poblacion"],
         max_iteraciones=params["max_iteraciones"],
@@ -290,10 +317,26 @@ def main() -> None:
             f"hora_{int(h)}" if float(h).is_integer() else f"hora_{h:.1f}".replace(".", "_")
             for h in params["valores_hora"]
         ]
-        ejecutar_orquestador_visual(
+        gifs = ejecutar_orquestador_visual(
             algoritmos_filtrar=params["algoritmos"],
             experimentos_filtrar=sufijos_horas,
-        )
+            dir_salida_gifs=dir_gifs,
+            dir_resultados=dir_resultados,
+        ) or []
+
+        if args.mostrar:
+            for clave, exp in resultados["experimentos"].items():
+                for algo in params["algoritmos"]:
+                    if algo in exp:
+                        r = exp[algo]
+                        print(f"\n[{algo} | {clave}] Costo total: {r['mejor_costo_total']:.2f} EUR")
+                        ruta = r["mejor_ruta_ciudades"]
+                        print("  Recorrido: " + " -> ".join(ruta + ruta[:1]))
+            for g in gifs:
+                if g.exists():
+                    print(f"[INFO] Abriendo {g}")
+                    if hasattr(os, "startfile"):
+                        os.startfile(g)
 
     t_total = time.time() - t0
     print(f"\n[OK] Ejecución completada en {t_total:.2f} segundos.")

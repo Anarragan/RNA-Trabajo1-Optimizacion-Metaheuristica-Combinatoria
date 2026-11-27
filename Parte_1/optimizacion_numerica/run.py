@@ -81,6 +81,9 @@ def crear_parser():
                         "fija max_iter de cada algoritmo: GD = budget/(2*dim), "
                         "poblacionales = budget/pop_size. Ignora --max-iter.")
     p.add_argument("--bounds", type=float, nargs=2)
+    p.add_argument("--x0", type=float, nargs="+",
+                   help="Condición inicial del descenso por gradiente (dim valores). "
+                        "Ej.: --x0 400 -300. Si se omite, se sortea con la semilla.")
     p.add_argument("--threshold", type=float)
     p.add_argument("--tag")
 
@@ -128,6 +131,15 @@ def construir_parametros(args, config, algo, problema):
         params["max_iter"] = int(budget // costo_iter)
     # Regla de parada común: detenerse al alcanzar f <= umbral de éxito.
     params["target"] = threshold
+
+    if args.x0 is not None:
+        if algo != "gd":
+            raise ValueError("--x0 solo aplica al descenso por gradiente (--algo gd).")
+        if len(args.x0) != dim:
+            raise ValueError(f"--x0 debe tener {dim} valores (dim={dim}); recibió {len(args.x0)}.")
+        if not all(bounds[0] <= v <= bounds[1] for v in args.x0):
+            raise ValueError(f"--x0 debe estar dentro de los límites {bounds}.")
+        params["x0"] = list(args.x0)
 
     if dim < problema.dim_min:
         raise ValueError(f"{problema.nombre} requiere dim >= {problema.dim_min}.")
