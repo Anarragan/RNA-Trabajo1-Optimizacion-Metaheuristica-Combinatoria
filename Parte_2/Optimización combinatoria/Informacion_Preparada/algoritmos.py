@@ -442,7 +442,7 @@ def ejecutar_experimentos_comparativos(
         )
 
     print(sep_double)
-    print(f"Archivos exportados exitosamente en: '{dir_salida.relative_to(directorio_base)}'")
+    print(f"Archivos exportados exitosamente en: '{dir_salida}'")
     print(sep_double)
 
     return resultados_globales

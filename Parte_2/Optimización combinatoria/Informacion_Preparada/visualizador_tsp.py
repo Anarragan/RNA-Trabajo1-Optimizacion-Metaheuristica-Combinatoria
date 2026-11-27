@@ -262,7 +262,8 @@ def ejecutar_orquestador_visual(
     algoritmos_filtrar: Optional[list] = None,
     experimentos_filtrar: Optional[list] = None,
     dir_salida_gifs: Optional[Path] = None,
-):
+    dir_resultados: Optional[Path] = None,
+) -> list:
     """
     Orquesta y ejecuta de forma automatizada la generación visual completa para ACO y GA.
 
@@ -285,7 +286,8 @@ def ejecutar_orquestador_visual(
     """
     directorio_base = Path(__file__).resolve().parent
     
-    dir_datos = directorio_base / "datos_graficas"
+    dir_datos = Path(dir_resultados) if dir_resultados is not None else directorio_base / "datos_graficas"
+    generados = []
     ruta_ciudades = directorio_base / "data" / "ciudades_espana.csv"
     ruta_carreteras_zip = directorio_base / "data" / "260306-catalogorce2025.zip"
     
@@ -351,6 +353,7 @@ def ejecutar_orquestador_visual(
                 gdf_carreteras=gdf_carreteras,
                 fps=10
             )
+            generados.append(dir_gifs / f"{algoritmo.lower()}_espana47_{clave_exp}.gif")
             
         generar_imagen_comparativa_final(
             datos=datos_json,
@@ -362,6 +365,7 @@ def ejecutar_orquestador_visual(
         )
         
     print("\n¡Proceso Finalizado Exitosamente!")
+    return generados
 
 if __name__ == "__main__":
     # Ahora el orquestador se encarga de ejecutar ambos automáticamente
